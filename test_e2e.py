@@ -210,10 +210,10 @@ class TestSCCDiscoveryE2E(unittest.TestCase):
         self.assertTrue(os.path.exists(result))
 
     # -------------------------------------------------------------------------
-    # 6. Full Subprocess CLI End-to-End Execution
+    # 6. Full Subprocess CLI End-to-End Execution (Org Scope & Project Scope)
     # -------------------------------------------------------------------------
-    def test_06_cli_subprocess_execution(self):
-        """Execute the CLI script via subprocess and assert 0 exit code and created files."""
+    def test_06_cli_subprocess_execution_org_scope(self):
+        """Execute the CLI script via subprocess with Org Scope."""
         cli_script = os.path.abspath("scc_discovery.py")
         cmd = [
             sys.executable,
@@ -230,6 +230,27 @@ class TestSCCDiscoveryE2E(unittest.TestCase):
         self.assertIn("SUCCESS: Professional PDF Report generated", result.stdout)
         self.assertTrue(os.path.exists(self.pdf_path))
         self.assertTrue(os.path.exists(self.json_path))
+
+    def test_07_cli_subprocess_execution_project_scope(self):
+        """Execute the CLI script via subprocess with standalone Project Scope."""
+        cli_script = os.path.abspath("scc_discovery.py")
+        proj_pdf = os.path.join(self.test_dir.name, "project_output.pdf")
+        proj_json = os.path.join(self.test_dir.name, "project_output.json")
+        cmd = [
+            sys.executable,
+            cli_script,
+            "--mock-data",
+            "--project-id", "my-standalone-sec-project",
+            "--output-pdf", proj_pdf,
+            "--output-json", proj_json
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, f"CLI exited with error:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}")
+        self.assertIn("SCC DISCOVERY & AUDIT SUMMARY", result.stdout)
+        self.assertIn("projects/my-standalone-sec-project", result.stdout)
+        self.assertTrue(os.path.exists(proj_pdf))
+        self.assertTrue(os.path.exists(proj_json))
 
 
 if __name__ == "__main__":

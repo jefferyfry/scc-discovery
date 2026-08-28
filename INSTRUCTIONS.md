@@ -1,7 +1,7 @@
 # Google Cloud SCC Discovery & Security Posture Assessment Tool
 ## Setup, IAM Permissions, Authentication & Execution Guide
 
-This document provides step-by-step instructions for cloning the repository, configuring **read-only Google Cloud IAM permissions**, authenticating, and running the discovery tool in **Google Cloud Shell** or your **Local Terminal** to audit **Security Command Center (SCC)** and generate an executive **Security Posture Assessment Report (PDF & JSON)**.
+This document provides step-by-step instructions for cloning the repository, configuring **read-only Google Cloud IAM permissions**, authenticating, and running the discovery tool in **Google Cloud Shell** or your **Local Terminal** to audit **Security Command Center (SCC)** across **Standalone Projects** (projects with no Organization node), **Folders**, or full **Organizations**, and generate an executive **Security Posture Assessment Report (PDF & JSON)**.
 
 ---
 
@@ -17,21 +17,22 @@ This document provides step-by-step instructions for cloning the repository, con
    - [Granular API Permissions Breakdown](#granular-api-permissions-breakdown)
    - [Optional: Custom Least-Privilege IAM Role (YAML)](#optional-custom-least-privilege-iam-role-yaml)
 4. [Granting IAM Permissions via `gcloud`](#4-granting-iam-permissions-via-gcloud)
+   - [Case 1: Standalone Project (No Organization Node)](#case-1-standalone-project-no-organization-node)
+   - [Case 2: Organization-Wide Discovery](#case-2-organization-wide-discovery)
 5. [Enabling Required Google Cloud APIs](#5-enabling-required-google-cloud-apis)
 6. [Authentication Walkthrough](#6-authentication-walkthrough)
    - [Running in Google Cloud Shell](#running-in-google-cloud-shell)
    - [Running in Local Terminal (Application Default Credentials)](#running-in-local-terminal-application-default-credentials)
-7. [Locating Your Google Cloud Organization ID](#7-locating-your-google-cloud-organization-id)
-8. [Running the Discovery Script](#8-running-the-discovery-script)
-   - [Full Organization Audit (Generates PDF & JSON)](#full-organization-audit-generates-pdf--json)
+7. [Running the Discovery Script](#7-running-the-discovery-script)
+   - [Standalone Project Audit (No Organization Needed)](#standalone-project-audit-no-organization-needed)
+   - [Organization-Wide Audit](#organization-wide-audit)
    - [Folder-Scoped Audit](#folder-scoped-audit)
-   - [Project-Scoped Audit](#project-scoped-audit)
    - [Offline / Demo Mode (No GCP Connection Needed)](#offline--demo-mode-no-gcp-connection-needed)
    - [Downloading the PDF from Cloud Shell](#downloading-the-pdf-from-cloud-shell)
    - [CLI Arguments Reference](#cli-arguments-reference)
-9. [Reviewing the Generated Outputs](#9-reviewing-the-generated-outputs)
-10. [Automated End-to-End (E2E) Testing](#10-automated-end-to-end-e2e-testing)
-11. [Troubleshooting & FAQ](#11-troubleshooting--faq)
+8. [Reviewing the Generated Outputs](#8-reviewing-the-generated-outputs)
+9. [Automated End-to-End (E2E) Testing](#9-automated-end-to-end-e2e-testing)
+10. [Troubleshooting & FAQ](#10-troubleshooting--faq)
 
 ---
 
@@ -92,15 +93,15 @@ All operations performed by this tool are **100% read-only**. The tool issues on
 
 ### Predefined Read-Only Roles
 
-To audit an organization, your user account requires the following predefined read-only roles at the **Organization level** (or Folder level if scoped):
+Depending on whether you are auditing an **Organization** or a **Standalone Project**, grant the following read-only roles:
 
 | Predefined Role Name | Role ID | Purpose & Data Gathered |
 | :--- | :--- | :--- |
-| **Security Center Admin Viewer** | `roles/securitycenter.adminViewer` | Queries SCC tier, organization settings, registered sources, custom detection rules (SHA & ETD), continuous exports (Pub/Sub & BigQuery), mute rules, and server-side finding counts. |
-| **Security Postures Viewer** | `roles/securityposture.viewer` | Discovers security postures, policy sets, posture deployments, and posture templates. |
+| **Security Center Admin Viewer** | `roles/securitycenter.adminViewer` | Queries SCC tier, settings, registered sources, custom detection rules (SHA & ETD), continuous exports (Pub/Sub & BigQuery), mute rules, and server-side finding counts. |
+| **Security Postures Viewer** | `roles/securityposture.viewer` | Discovers security postures, policy sets, posture deployments (Enterprise tier). |
 | **DLP Reader / Viewer** | `roles/dlp.reader` | Inspects Sensitive Data Protection (Cloud DLP) discovery configs (profiling), inspect templates, de-identify rules, and job triggers. |
 | **Cloud Asset Viewer** | `roles/cloudasset.viewer` | Catalogs cloud asset inventory and groups assets across resource types. |
-| **Resource Manager Organization Viewer** | `roles/resourcemanager.organizationViewer` | Discovers organization hierarchy, folders tree, and project inventory for coverage analysis. |
+| **Resource Manager Viewer** | `roles/resourcemanager.viewer` | Discovers project metadata and parent hierarchy. |
 
 ---
 
@@ -110,7 +111,7 @@ If your security policy enforces custom granular roles, the following read permi
 
 ```
 # Security Command Center (SCC)
-securitycenter.organizationsettings.get
+securitycenter.organizationsettings.get  (for Org scope)
 securitycenter.sources.list
 securitycenter.sources.get
 securitycenter.findings.list
@@ -124,14 +125,6 @@ securitycenter.bigqueryexports.get
 securitycenter.securityhealthanalyticscustommodules.list
 securitycenter.eventthreatdetectioncustommodules.list
 
-# Security Posture Management (SCC Enterprise)
-securityposture.postures.list
-securityposture.postures.get
-securityposture.postureDeployments.list
-securityposture.postureDeployments.get
-securityposture.postureTemplates.list
-securityposture.postureTemplates.get
-
 # Sensitive Data Protection (Cloud DLP)
 dlp.discoveryConfigs.list
 dlp.discoveryConfigs.get
@@ -144,11 +137,9 @@ dlp.jobTriggers.get
 
 # Cloud Asset Inventory & Resource Manager
 cloudasset.assets.searchAllResources
-resourcemanager.organizations.get
-resourcemanager.folders.list
-resourcemanager.folders.get
-resourcemanager.projects.list
 resourcemanager.projects.get
+resourcemanager.organizations.get (for Org scope)
+resourcemanager.folders.list (for Org/Folder scope)
 ```
 
 ---
@@ -163,7 +154,6 @@ title: "SCC Read-Only Discovery Auditor"
 description: "Minimal read-only permissions to audit SCC configuration and asset posture."
 stage: "GA"
 includedPermissions:
-  - securitycenter.organizationsettings.get
   - securitycenter.sources.list
   - securitycenter.sources.get
   - securitycenter.findings.list
@@ -174,11 +164,6 @@ includedPermissions:
   - securitycenter.notificationconfig.get
   - securitycenter.bigqueryexports.list
   - securitycenter.bigqueryexports.get
-  - securityposture.postures.list
-  - securityposture.postures.get
-  - securityposture.postureDeployments.list
-  - securityposture.postureDeployments.get
-  - securityposture.postureTemplates.list
   - dlp.discoveryConfigs.list
   - dlp.discoveryConfigs.get
   - dlp.inspectTemplates.list
@@ -186,30 +171,51 @@ includedPermissions:
   - dlp.deidentifyTemplates.list
   - dlp.jobTriggers.list
   - cloudasset.assets.searchAllResources
-  - resourcemanager.organizations.get
-  - resourcemanager.folders.list
-  - resourcemanager.projects.list
+  - resourcemanager.projects.get
 ```
 
-2. Create the role at the organization level:
+2. Create the role at the Project or Organization level:
 ```bash
+# At Project Level:
+PROJECT_ID="YOUR_PROJECT_ID"
+gcloud iam roles create sccDiscoveryAuditor --project=$PROJECT_ID --file=scc_discovery_role.yaml
+
+# Or at Organization Level:
 ORG_ID="YOUR_ORGANIZATION_ID"
-gcloud iam roles create sccDiscoveryAuditor \
-    --organization=$ORG_ID \
-    --file=scc_discovery_role.yaml
+gcloud iam roles create sccDiscoveryAuditor --organization=$ORG_ID --file=scc_discovery_role.yaml
 ```
 
 ---
 
 ## 4. Granting IAM Permissions via `gcloud`
 
-Run the following commands in Cloud Shell or Terminal (executed by an Organization Administrator):
+### Case 1: Standalone Project (No Organization Node)
+If your project is standalone (or you only have permissions on a specific project):
+
+```bash
+PROJECT_ID="YOUR_PROJECT_ID"          # Replace with your project ID (e.g. secops-prod)
+USER_EMAIL="your-email@company.com"   # Replace with your Google user account email
+
+for ROLE in \
+    roles/securitycenter.adminViewer \
+    roles/dlp.reader \
+    roles/cloudasset.viewer \
+    roles/resourcemanager.viewer; do
+    gcloud projects add-iam-policy-binding $PROJECT_ID \
+        --member="user:$USER_EMAIL" \
+        --role="$ROLE"
+done
+```
+
+---
+
+### Case 2: Organization-Wide Discovery
+If auditing an entire Organization:
 
 ```bash
 ORG_ID="YOUR_ORGANIZATION_ID"        # Replace with your numeric Org ID (e.g. 123456789012)
 USER_EMAIL="your-email@company.com"   # Replace with your Google user account email
 
-# Grant required read-only roles at Organization level
 for ROLE in \
     roles/securitycenter.adminViewer \
     roles/securityposture.viewer \
@@ -226,12 +232,11 @@ done
 
 ## 5. Enabling Required Google Cloud APIs
 
-Ensure the following Google Cloud security APIs are active:
+Ensure the following Google Cloud security APIs are active on your project:
 
 ```bash
 gcloud services enable \
     securitycenter.googleapis.com \
-    securityposture.googleapis.com \
     dlp.googleapis.com \
     cloudasset.googleapis.com \
     cloudresourcemanager.googleapis.com
@@ -260,7 +265,7 @@ pip install -r requirements.txt
 If executing from your local macOS / Linux terminal:
 
 ```bash
-# 1. Login with your Google Workspace / Cloud Identity account
+# 1. Login with your Google account
 gcloud auth login
 
 # 2. Generate Application Default Credentials (ADC)
@@ -274,26 +279,21 @@ pip install -r requirements.txt
 
 ---
 
-## 7. Locating Your Google Cloud Organization ID
+## 7. Running the Discovery Script
 
-To find your Organization ID:
+### Standalone Project Audit (No Organization Needed)
+To audit a project-level SCC instance:
 
 ```bash
-gcloud organizations list
+python scc_discovery.py \
+    --project-id YOUR_PROJECT_ID \
+    --output-pdf scc_discovery_report.pdf \
+    --output-json scc_discovery_raw.json
 ```
 
-Example Output:
-```
-DISPLAY_NAME          ID            DIRECTORY_CUSTOMER_ID
-enterprise-corp.com   108429384721  C01ab2c3d
-```
-Use the numeric value `108429384721` as the argument to `--org-id`.
+### Organization-Wide Audit
+To audit an entire Google Cloud Organization:
 
----
-
-## 8. Running the Discovery Script
-
-### Full Organization Audit (Generates PDF & JSON)
 ```bash
 python scc_discovery.py \
     --org-id 108429384721 \
@@ -304,21 +304,12 @@ python scc_discovery.py \
 ### Folder-Scoped Audit
 ```bash
 python scc_discovery.py \
-    --org-id 108429384721 \
     --folder-id 948201948271 \
     --output-pdf prod_folder_scc_report.pdf
 ```
 
-### Project-Scoped Audit
-```bash
-python scc_discovery.py \
-    --org-id 108429384721 \
-    --project-id ecommerce-frontend-prod \
-    --output-pdf project_scc_report.pdf
-```
-
 ### Offline / Demo Mode (No GCP Connection Needed)
-To preview report generation and inspect sample outputs without GCP credentials:
+To preview report generation without GCP credentials:
 ```bash
 python scc_discovery.py \
     --mock-data \
@@ -327,7 +318,7 @@ python scc_discovery.py \
 ```
 
 ### Downloading the PDF from Cloud Shell
-If you ran the script in **Google Cloud Shell**, download the generated PDF to your local machine using the built-in command:
+If you ran the script in **Google Cloud Shell**, download the generated PDF to your local machine:
 
 ```bash
 cloudshell download scc_discovery_report.pdf
@@ -340,25 +331,25 @@ cloudshell download scc_discovery_report.pdf
 
 | Argument | Description | Default |
 | :--- | :--- | :--- |
-| `--org-id` | GCP Organization ID (numeric string or `organizations/123`). | `None` (Required for live runs) |
+| `--project-id` | GCP Project ID to audit a standalone or project-scoped SCC instance. | `None` |
+| `--org-id` | GCP Organization ID (numeric string or `organizations/123`). | `None` |
 | `--folder-id` | Optional GCP Folder ID to scope hierarchy discovery. | `None` |
-| `--project-id` | Optional GCP Project ID to scope discovery to a single project. | `None` |
 | `--location` | Regional or global endpoint location. | `global` |
 | `--output-pdf` | Path for the generated PDF assessment report. | `scc_discovery_report.pdf` |
 | `--output-json` | Optional path to export the complete discovery dataset as JSON. | `None` |
-| `--mock-data`, `--demo` | Runs discovery using a synthetic enterprise dataset for offline demos. | `False` |
+| `--mock-data`, `--demo` | Runs discovery using a synthetic dataset for offline demos. | `False` |
 | `-v`, `--verbose` | Enables detailed debug logging in console. | `False` |
 
 ---
 
-## 9. Reviewing the Generated Outputs
+## 8. Reviewing the Generated Outputs
 
 ### Terminal Summary
-Upon completion, the tool prints an executive summary table to the console detailing tier, asset volume, findings breakdown, and architecture readiness score.
+Upon completion, the tool prints an executive summary table to the console detailing scope, tier, asset volume, findings breakdown, and architecture readiness score.
 
 ### Executive PDF Report (`scc_discovery_report.pdf`)
 The generated PDF is an 8-page, publication-quality document containing:
-1. **Cover Page & Metadata**: Organization ID, scope, auditor identity, and assessment date.
+1. **Cover Page & Metadata**: Scope target (Project/Org), ID, auditor identity, and assessment date.
 2. **Section 1 - Executive Summary & Scorecard**: 6 visual metric stat cards and readiness breakdown score (0-100).
 3. **Section 2 - SCC Tier & Built-in Services**: Tier classification, asset discovery status, service agents, and status of SHA, ETD, CTD, VMTD, RVD, WSS, SDP, and custom detection rules.
 4. **Section 3 - Security Postures & Sensitive Data (DLP)**: Postures, deployments, templates, discovery configs, and inspect templates.
@@ -372,9 +363,9 @@ Contains the full machine-readable JSON structure for programmatic analysis or i
 
 ---
 
-## 10. Automated End-to-End (E2E) Testing
+## 9. Automated End-to-End (E2E) Testing
 
-A dedicated test suite [`test_e2e.py`](file:///Users/jeff.fry/git/scc-discovery/test_e2e.py) is included to validate the entire discovery, JSON serialization, PDF rendering, and CLI execution pipeline without requiring live GCP credentials.
+A dedicated test suite [`test_e2e.py`](file:///Users/jeff.fry/git/scc-discovery/test_e2e.py) is included to validate the entire discovery, JSON serialization, PDF rendering, and CLI execution pipeline across both Project and Organization scopes.
 
 ### Running the Test Suite
 ```bash
@@ -385,23 +376,15 @@ python test_e2e.py
 python3 -m unittest test_e2e.py -v
 ```
 
-### What the E2E Test Suite Validates:
-1. **Mock Dataset & Schema Integrity**: Verifies that synthetic enterprise data contains all required keys and correct types across all 13 domains.
-2. **Migration Readiness & Roadmap**: Validates scoring algorithms, rating thresholds, and 4-phase milestone deliverables.
-3. **JSON Serialization**: Ensures the data structure serializes to valid JSON and reloads losslessly.
-4. **ReportLab PDF Generation & Magic Bytes**: Verifies that `%PDF` header magic bytes are valid, minimum page count is met (>= 7 pages), and `NumberedCanvas` renders cleanly without layout overflows.
-5. **Error Resilience (Mocked 403 & 404)**: Injects mocked HTTP 403 Forbidden and 404 Not Found errors to verify graceful degradation.
-6. **Subprocess CLI Execution**: Executes `scc_discovery.py` as a real OS subprocess with `--mock-data`, `--output-pdf`, and `--output-json` to assert exit code `0`.
-
 ---
 
-## 11. Troubleshooting & FAQ
+## 10. Troubleshooting & FAQ
+
+### Q: I have an SCC instance on a project with no organization. How do I run the tool?
+**Solution**: Run `python scc_discovery.py --project-id YOUR_PROJECT_ID`. The tool will automatically scope all SCC, DLP, Asset, and Findings API queries to your project without requiring an Organization resource.
 
 ### Q: I received `403 Forbidden` / `PERMISSION_DENIED` on Organization Settings or Postures.
-**Solution**: Ensure your user identity has `roles/securitycenter.adminViewer` and `roles/securityposture.viewer` granted at the **Organization** level (`gcloud organizations add-iam-policy-binding`).
+**Solution**: Ensure your user identity has `roles/securitycenter.adminViewer` granted on the project (`gcloud projects add-iam-policy-binding`) or organization (`gcloud organizations add-iam-policy-binding`).
 
 ### Q: `securityposture.googleapis.com` or `dlp.googleapis.com` returned `404 Not Found`.
-**Solution**: If running on SCC Standard tier, the Security Postures API is disabled. The script automatically catches this, records the feature as `UNAVAILABLE (Standard Tier)`, and continues discovering all other resources without failing.
-
-### Q: How do I test the PDF formatting without live GCP credentials?
-**Solution**: Run `python scc_discovery.py --mock-data --output-pdf preview.pdf` to generate a full report using synthetic enterprise data.
+**Solution**: On project-scoped or Standard tier instances, Organization Postures are not active. The script automatically catches this, records the feature as `NOT_APPLICABLE (Project Scope)`, and continues discovering all other resources without failing.

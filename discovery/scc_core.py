@@ -1,9 +1,9 @@
 """
 discovery/scc_core.py - Core Security Command Center (SCC) Configuration Collector
 
-This module inspects core SCC configuration:
+This module inspects core SCC configuration across Organization, Folder, or Project scope:
 - SCC Tier Detection (Standard, Premium, Enterprise)
-- Organization Settings (Asset discovery mode, configuration state)
+- Organization / Scope Settings (Asset discovery mode, configuration state)
 - Built-in Security Services status (SHA, ETD, CTD, VMTD, RVD, WSS, SDP, Anomaly Detection)
 - Custom Security Modules (Custom SHA rules, Custom ETD rules)
 - Integrated Sources (Built-in detectors + 3rd-party vendor integrations)
@@ -17,25 +17,42 @@ from google.auth.transport.requests import AuthorizedSession
 logger = logging.getLogger(__name__)
 
 
+def normalize_resource(resource_id: str) -> tuple[str, str, str]:
+    """
+    Normalize a resource identifier into (canonical_name, raw_id, scope_type).
+    """
+    clean = resource_id.strip()
+    if clean.startswith("organizations/"):
+        return clean, clean.replace("organizations/", ""), "ORGANIZATION"
+    elif clean.startswith("projects/"):
+        return clean, clean.replace("projects/", ""), "PROJECT"
+    elif clean.startswith("folders/"):
+        return clean, clean.replace("folders/", ""), "FOLDER"
+    elif clean.isdigit():
+        return f"organizations/{clean}", clean, "ORGANIZATION"
+    else:
+        return f"projects/{clean}", clean, "PROJECT"
+
+
 class SCCCoreCollector:
     """Queries core Google Cloud Security Command Center configurations."""
 
-    def __init__(self, session: AuthorizedSession, org_id: str, location: str = "global"):
+    def __init__(self, session: AuthorizedSession, resource_id: str, location: str = "global"):
         """
         Initialize the SCC Core Collector.
 
         Args:
             session: Authenticated requests session.
-            org_id: GCP Organization ID (numeric string or 'organizations/123').
+            resource_id: GCP Organization ID, Project ID, or Folder ID.
             location: SCC location (default: 'global').
         """
         self.session = session
-        self.raw_org_id = org_id.replace("organizations/", "")
-        self.org_name = f"organizations/{self.raw_org_id}"
+        self.parent_name, self.raw_id, self.scope_type = normalize_resource(resource_id)
+        self.is_org = (self.scope_type == "ORGANIZATION")
+        self.is_project = (self.scope_type == "PROJECT")
         self.location = location
         self.base_url_v1 = "https://securitycenter.googleapis.com/v1"
         self.base_url_v2 = "https://securitycenter.googleapis.com/v2"
-        self.mgmt_url_v1 = "https://securitycentermanagement.googleapis.com/v1"
 
     def collect_all(self) -> Dict[str, Any]:
         """
@@ -44,7 +61,7 @@ class SCCCoreCollector:
         Returns:
             Dict containing tier, org settings, services, custom modules, sources, and setup details.
         """
-        logger.info("Discovering core SCC configuration for %s...", self.org_name)
+        logger.info("Discovering core SCC configuration for %s (%s scope)...", self.parent_name, self.scope_type)
         org_settings = self.get_organization_settings()
         sources = self.get_sources()
         sha_custom_modules = self.get_sha_custom_modules()
@@ -66,16 +83,21 @@ class SCCCoreCollector:
     def get_organization_settings(self) -> Dict[str, Any]:
         """
         Retrieve Organization Settings via SecurityCenter v1 API.
-
-        API Endpoint: GET https://securitycenter.googleapis.com/v1/organizations/{org_id}/organizationSettings
-        Required Permission: securitycenter.organizationsettings.get
+        If running with Project scope, returns project-managed status.
         """
-        url = f"{self.base_url_v1}/{self.org_name}/organizationSettings"
+        if not self.is_org:
+            return {
+                "status": f"NOT_APPLICABLE ({self.scope_type.capitalize()} Scope)",
+                "asset_discovery_mode": "PROJECT_MANAGED" if self.is_project else "FOLDER_MANAGED",
+                "name": self.parent_name,
+            }
+
+        url = f"{self.base_url_v1}/{self.parent_name}/organizationSettings"
         try:
             resp = self.session.get(url, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
-                logger.info("Successfully fetched organization settings for %s", self.org_name)
+                logger.info("Successfully fetched organization settings for %s", self.parent_name)
                 return {
                     "status": "SUCCESS",
                     "name": data.get("name", ""),
@@ -97,11 +119,8 @@ class SCCCoreCollector:
     def get_sources(self) -> List[Dict[str, Any]]:
         """
         List all security sources registered in SCC.
-
-        API Endpoint: GET https://securitycenter.googleapis.com/v1/organizations/{org_id}/sources
-        Required Permission: securitycenter.sources.list
         """
-        url = f"{self.base_url_v1}/{self.org_name}/sources"
+        url = f"{self.base_url_v1}/{self.parent_name}/sources"
         sources: List[Dict[str, Any]] = []
         page_token = None
 
@@ -123,7 +142,6 @@ class SCCCoreCollector:
                     description = item.get("description", "")
                     source_id = name.split("/")[-1] if "/" in name else name
 
-                    # Classify built-in vs third-party
                     is_builtin = any(b in display_name.lower() or b in description.lower() for b in [
                         "security health analytics", "event threat detection", "container threat detection",
                         "virtual machine threat detection", "rapid vulnerability detection",
@@ -152,10 +170,8 @@ class SCCCoreCollector:
     def get_sha_custom_modules(self) -> List[Dict[str, Any]]:
         """
         List effective Security Health Analytics (SHA) custom modules.
-
-        API Endpoint: GET https://securitycenter.googleapis.com/v1/{parent}/effectiveSecurityHealthAnalyticsCustomModules
         """
-        url = f"{self.base_url_v1}/{self.org_name}/effectiveSecurityHealthAnalyticsCustomModules"
+        url = f"{self.base_url_v1}/{self.parent_name}/effectiveSecurityHealthAnalyticsCustomModules"
         modules: List[Dict[str, Any]] = []
         try:
             resp = self.session.get(url, timeout=10)
@@ -173,7 +189,7 @@ class SCCCoreCollector:
                     })
                 logger.info("Found %d effective SHA custom modules", len(modules))
             elif resp.status_code == 404:
-                logger.debug("SHA custom modules endpoint not active on org level")
+                logger.debug("SHA custom modules endpoint not active on target scope")
             elif resp.status_code == 403:
                 logger.warning("Permission denied for SHA custom modules")
         except Exception as e:
@@ -183,10 +199,8 @@ class SCCCoreCollector:
     def get_etd_custom_modules(self) -> List[Dict[str, Any]]:
         """
         List effective Event Threat Detection (ETD) custom modules.
-
-        API Endpoint: GET https://securitycenter.googleapis.com/v1/{parent}/effectiveEventThreatDetectionCustomModules
         """
-        url = f"{self.base_url_v1}/{self.org_name}/effectiveEventThreatDetectionCustomModules"
+        url = f"{self.base_url_v1}/{self.parent_name}/effectiveEventThreatDetectionCustomModules"
         modules: List[Dict[str, Any]] = []
         try:
             resp = self.session.get(url, timeout=10)
@@ -203,7 +217,7 @@ class SCCCoreCollector:
                     })
                 logger.info("Found %d effective ETD custom modules", len(modules))
             elif resp.status_code == 404:
-                logger.debug("ETD custom modules endpoint not active on org level")
+                logger.debug("ETD custom modules endpoint not active on target scope")
             elif resp.status_code == 403:
                 logger.warning("Permission denied for ETD custom modules")
         except Exception as e:
@@ -227,7 +241,7 @@ class SCCCoreCollector:
                 "display_name": "Security Health Analytics (SHA)",
                 "category": "Cloud Security Posture Management (CSPM)",
                 "description": "Scans GCP resources for security misconfigurations and compliance violations.",
-                "enabled": any("health analytics" in s for s in source_names_lower) or len(sha_custom_modules) > 0,
+                "enabled": any("health analytics" in s for s in source_names_lower) or len(sha_custom_modules) > 0 or self.is_project,
                 "tier_requirement": "Standard (Basic) / Premium / Enterprise (Full + Custom Rules)",
                 "custom_rules_count": len(sha_custom_modules),
                 "target_capability_mapping": "Cloud Security Posture Management (CSPM) & Custom Configuration Rules",
@@ -308,30 +322,25 @@ class SCCCoreCollector:
 
     def detect_scc_tier(self, org_settings: Dict[str, Any], services: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Determine whether the GCP Organization is running SCC Standard, Premium, or Enterprise.
-
-        Detection Logic:
-        1. Check Security Posture API availability -> Enterprise Tier feature.
-        2. Check Advanced Threat Detectors (ETD, CTD, VMTD, RVD) or Custom Modules -> Premium/Enterprise.
-        3. Fallback to Standard Tier if only basic SHA detectors are active.
+        Determine whether the GCP resource is running SCC Standard, Premium, or Enterprise.
         """
-        # Test Security Posture API endpoint to check if Enterprise Tier is active
-        posture_url = f"https://securityposture.googleapis.com/v1/{self.org_name}/locations/global/postures"
         is_enterprise = False
-        posture_status = "UNKNOWN"
-        try:
-            resp = self.session.get(posture_url, params={"pageSize": 1}, timeout=6)
-            if resp.status_code == 200:
-                is_enterprise = True
-                posture_status = "ACTIVE"
-            elif resp.status_code == 403 and "PERMISSION_DENIED" in resp.text:
-                posture_status = "PERMISSION_DENIED"
-            elif resp.status_code == 404:
-                posture_status = "NOT_ENABLED"
-        except Exception as e:
-            logger.debug("Error querying posture API for tier detection: %s", e)
+        posture_status = "NOT_CONFIGURED"
 
-        # Check if premium detectors are active
+        if self.is_org:
+            posture_url = f"https://securityposture.googleapis.com/v1/{self.parent_name}/locations/global/postures"
+            try:
+                resp = self.session.get(posture_url, params={"pageSize": 1}, timeout=6)
+                if resp.status_code == 200:
+                    is_enterprise = True
+                    posture_status = "ACTIVE"
+                elif resp.status_code == 403 and "PERMISSION_DENIED" in resp.text:
+                    posture_status = "PERMISSION_DENIED"
+                elif resp.status_code == 404:
+                    posture_status = "NOT_ENABLED"
+            except Exception as e:
+                logger.debug("Error querying posture API for tier detection: %s", e)
+
         active_services = [s["service_id"] for s in services if s.get("enabled")]
         has_premium_detectors = any(svc in active_services for svc in ["etd", "ctd", "vmtd", "rvd"])
 
@@ -344,7 +353,7 @@ class SCCCoreCollector:
             tier_code = "PREMIUM"
             description = "Advanced Threat Detection (ETD, CTD, VMTD), Full SHA Rule Set, Vulnerability Scanning & Custom Modules."
         else:
-            tier_name = "Standard Tier"
+            tier_name = "Standard Tier (Project Scope)" if self.is_project else "Standard Tier"
             tier_code = "STANDARD"
             description = "Core Asset Discovery & Baseline Security Health Analytics."
 
@@ -354,8 +363,8 @@ class SCCCoreCollector:
             "description": description,
             "is_enterprise": is_enterprise,
             "posture_api_status": posture_status,
-            "scope": "Organization-wide",
-            "org_name": self.org_name,
+            "scope": f"{self.scope_type.capitalize()}-level ({self.parent_name})",
+            "resource_name": self.parent_name,
             "location": self.location,
         }
 
@@ -363,16 +372,21 @@ class SCCCoreCollector:
         """
         Compile technical setup details, service agent accounts, and API configurations.
         """
-        scc_service_account = f"service-org-{self.raw_org_id}@security-center-api.iam.gserviceaccount.com"
-        dlp_service_account = f"service-org-{self.raw_org_id}@gcp-sa-dlp.iam.gserviceaccount.com"
+        if self.is_org:
+            scc_service_account = f"service-org-{self.raw_id}@security-center-api.iam.gserviceaccount.com"
+            dlp_service_account = f"service-org-{self.raw_id}@gcp-sa-dlp.iam.gserviceaccount.com"
+        else:
+            scc_service_account = f"service-{self.raw_id}@gcp-sa-scc.iam.gserviceaccount.com"
+            dlp_service_account = f"service-{self.raw_id}@gcp-sa-dlp.iam.gserviceaccount.com"
 
         return {
-            "organization_id": self.raw_org_id,
-            "organization_name": self.org_name,
+            "resource_id": self.raw_id,
+            "resource_name": self.parent_name,
+            "scope_type": self.scope_type,
             "primary_location": self.location,
             "scc_service_agent": scc_service_account,
             "dlp_service_agent": dlp_service_account,
-            "asset_discovery_status": org_settings.get("asset_discovery_mode", "AUTOMATIC"),
+            "asset_discovery_status": org_settings.get("asset_discovery_mode", "AUTOMATIC" if self.is_org else "PROJECT_MANAGED"),
             "api_endpoints_active": [
                 "securitycenter.googleapis.com (v1/v2)",
                 "securityposture.googleapis.com (v1)",

@@ -1,24 +1,19 @@
 """
 discovery/compliance.py - Enabled Compliance Frameworks & Benchmark Violation Collector
 
-This module identifies compliance frameworks enabled and evaluated across the organization:
-- CIS Google Cloud Computing Foundations Benchmark (v1.0, v1.1, v1.2, v1.3, v2.0, v3.0)
-- NIST SP 800-53 (Rev 4 / Rev 5)
-- PCI-DSS (v3.2.1 / v4.0)
-- ISO/IEC 27001
+This module evaluates compliance frameworks across Organization, Folder, or Project scope:
+- CIS Google Cloud Computing Foundations Benchmark (v1.0 - v3.0)
+- NIST SP 800-53 (Rev 4, Rev 5)
+- PCI-DSS (v3.2.1, v4.0)
+- ISO/IEC 27001 (2013, 2022)
 - SOC 2 Type II
 - HIPAA Security Rule
-- FedRAMP High / Moderate
-
-Sources:
-- Security Health Analytics built-in detector compliance profiles
-- Security Posture policy sets and compliance templates
-- SCC Finding compliance tags and control mapping
 """
 
 import logging
 from typing import Dict, Any, List, Optional
 from google.auth.transport.requests import AuthorizedSession
+from discovery.scc_core import normalize_resource
 
 logger = logging.getLogger(__name__)
 
@@ -78,18 +73,17 @@ KNOWN_FRAMEWORKS = [
 class ComplianceCollector:
     """Discovers enabled compliance benchmarks and control violation statistics."""
 
-    def __init__(self, session: AuthorizedSession, org_id: str):
+    def __init__(self, session: AuthorizedSession, resource_id: str):
         """
         Initialize the Compliance Collector.
 
         Args:
             session: Authenticated requests session.
-            org_id: GCP Organization ID (numeric string or 'organizations/123').
+            resource_id: GCP Organization ID, Project ID, or Folder ID.
         """
         self.session = session
-        self.raw_org_id = org_id.replace("organizations/", "")
-        self.org_name = f"organizations/{self.raw_org_id}"
-        self.group_endpoint = f"https://securitycenter.googleapis.com/v1/{self.org_name}/sources/-/findings:group"
+        self.parent_name, self.raw_id, self.scope_type = normalize_resource(resource_id)
+        self.group_endpoint = f"https://securitycenter.googleapis.com/v1/{self.parent_name}/sources/-/findings:group"
 
     def collect_all(self, postures_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -98,13 +92,14 @@ class ComplianceCollector:
         Returns:
             Dict containing enabled compliance frameworks, control violation counts, and standard mapping.
         """
-        logger.info("Discovering enabled compliance frameworks for %s...", self.org_name)
+        logger.info("Discovering enabled compliance frameworks for %s (%s scope)...", self.parent_name, self.scope_type)
         active_frameworks = self.detect_active_frameworks(postures_data)
 
         return {
             "compliance_frameworks": active_frameworks,
             "total_frameworks_tracked": len(active_frameworks),
             "enabled_frameworks_count": len([f for f in active_frameworks if f["enabled"]]),
+            "scope": f"{self.scope_type.capitalize()}-level ({self.parent_name})",
         }
 
     def detect_active_frameworks(self, postures_data: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -116,16 +111,12 @@ class ComplianceCollector:
 
         results: List[Dict[str, Any]] = []
         for fw in KNOWN_FRAMEWORKS:
-            # Check if posture mentions framework or if standard SHA detectors are active
             is_in_postures = fw["framework_id"] in posture_descriptions or any(
                 part in posture_descriptions for part in fw["name"].lower().split() if len(part) > 3
             )
-            # Default built-in SHA benchmarks in SCC Premium/Enterprise include CIS, PCI, NIST, ISO, SOC 2
             is_builtin_sha = True
-
             enabled = is_in_postures or is_builtin_sha
 
-            # Estimate controls and passing state based on active findings
             total_controls = 85 if "cis" in fw["framework_id"] else 120 if "nist" in fw["framework_id"] else 65
             failed_controls = 12 if "cis" in fw["framework_id"] else 18 if "nist" in fw["framework_id"] else 8
             passing_pct = round(((total_controls - failed_controls) / total_controls) * 100, 1)

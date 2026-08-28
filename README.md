@@ -2,14 +2,15 @@
 
 An enterprise-grade Python discovery and audit tool that queries Google Cloud Security Command Center (SCC) and related GCP security APIs using read-only permissions to audit your existing security architecture and generate an executive-ready PDF report.
 
-Designed to be executed directly from **Google Cloud Shell** or your **Local Terminal**.
+Supports auditing **Organizations**, **Folders**, or **Standalone Projects** (projects without an Organization node), directly from **Google Cloud Shell** or your **Local Terminal**.
 
 ---
 
 ## Key Features
 
+- **Project & Organization Scope Support**: Audits standalone GCP Projects, Folder hierarchies, or full Google Cloud Organizations.
 - **SCC Tier & Setup Audit**: Identifies active SCC tier (Standard / Premium / Enterprise), asset discovery modes, and service agents.
-- **Security Posture Discovery**: Discovers security postures, revisions, policy sets, and posture deployments.
+- **Security Posture Discovery**: Discovers security postures, revisions, policy sets, and posture deployments (Enterprise tier).
 - **Sensitive Data Protection (Cloud DLP)**: Audits automated profiling discovery configs, inspect templates, de-identify rules, and job triggers.
 - **Integrated & Built-in Services**: Inspects SHA, ETD, CTD, VMTD, RVD, WSS, SDP, Anomaly Detection, plus custom SHA/ETD detection modules.
 - **Continuous Exports & Mute Rules**: Catalogs Pub/Sub notification topics, BigQuery streaming datasets, and active CEL finding mute rules.
@@ -17,7 +18,7 @@ Designed to be executed directly from **Google Cloud Shell** or your **Local Ter
 - **Findings Aggregation**: Performs server-side `group_findings` queries across detector sources, top issue categories, severities, and finding classes.
 - **Compliance Benchmarks**: Evaluates active compliance frameworks (CIS GCP Foundations v2.0, NIST 800-53, PCI-DSS, ISO 27001, SOC 2, HIPAA).
 - **Asset Inventory Breakdown**: Catalogs cloud assets across Compute, Storage, Databases, IAM, Networking, and Cryptography.
-- **Organization Hierarchy Coverage**: Maps Organization, Folders, and Projects to evaluate security coverage.
+- **Hierarchy & Scope Coverage**: Maps Project, Folder, and Organization resources to evaluate security coverage.
 - **Architecture Migration Blueprint**: Calculates an overall Migration Readiness Score (0-100), provides an architectural mapping matrix, and outlines a 4-phase transition roadmap.
 - **Executive PDF Report Generator**: Generates an 8-page, publication-quality PDF report using ReportLab with dynamic `Page X of Y` numbering, stat cards, and clean typography.
 - **Demo / Offline Mode**: Includes a realistic synthetic enterprise dataset for dry-runs and offline report generation without live GCP access.
@@ -62,7 +63,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. Run Discovery and Generate PDF Report
+# 3A. Run Discovery against a Standalone Project (No Organization needed):
+python scc_discovery.py --project-id YOUR_PROJECT_ID --output-pdf scc_discovery_report.pdf
+
+# 3B. Or Run Discovery against an entire Organization:
 python scc_discovery.py --org-id YOUR_ORGANIZATION_ID --output-pdf scc_discovery_report.pdf
 
 # 4. Download PDF to your computer
@@ -80,12 +84,13 @@ pip install -r requirements.txt
 gcloud auth login
 gcloud auth application-default login
 
-# 3. Run Discovery & Generate PDF Report
-python scc_discovery.py --org-id YOUR_ORGANIZATION_ID --output-pdf scc_discovery_report.pdf
+# 3. Run Discovery against a Project or Organization
+python scc_discovery.py --project-id YOUR_PROJECT_ID --output-pdf scc_discovery_report.pdf
 ```
 
 ### Option 3: Offline Demo Mode (No GCP Account Needed)
 ```bash
+# Offline demo run for a Project or Organization:
 python scc_discovery.py --mock-data --output-pdf scc_demo_report.pdf
 ```
 
@@ -100,7 +105,7 @@ python test_e2e.py
 
 ```
 .
-├── scc_discovery.py             # Main CLI entrypoint with full documentation & comments
+├── scc_discovery.py             # Main CLI entrypoint (Supports --project-id, --org-id, --folder-id)
 ├── test_e2e.py                  # End-to-end automated test suite
 ├── requirements.txt             # Required Python dependencies
 ├── .gitignore                   # Git ignore patterns for Python, outputs & credentials
@@ -109,7 +114,7 @@ python test_e2e.py
 ├── discovery/                   # Read-only GCP API Collector Modules
 │   ├── __init__.py
 │   ├── auth.py                  # GCP authentication (ADC handling)
-│   ├── scc_core.py              # SCC tier, organization settings, built-in services & custom rules
+│   ├── scc_core.py              # SCC tier, scope settings, built-in services & custom rules
 │   ├── postures.py              # Security Posture Management & deployments
 │   ├── dlp_sdp.py               # Sensitive Data Protection (DLP) discovery & inspect templates
 │   ├── exports_mutes.py         # Continuous exports (Pub/Sub & BigQuery) and Mute rules
@@ -129,4 +134,4 @@ python test_e2e.py
 
 ## Documentation
 
-For full step-by-step instructions on IAM permissions setup, granting roles via `gcloud`, command-line arguments, and how to download and review the generated outputs, see [INSTRUCTIONS.md](file:///Users/jeff.fry/git/scc-discovery/INSTRUCTIONS.md).
+For full step-by-step instructions on IAM permissions setup at the Project or Organization level, granting roles via `gcloud`, command-line arguments, and how to download and review the generated outputs, see [INSTRUCTIONS.md](file:///Users/jeff.fry/git/scc-discovery/INSTRUCTIONS.md).

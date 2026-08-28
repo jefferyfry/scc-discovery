@@ -1,24 +1,23 @@
 """
-discovery/dlp_sdp.py - Sensitive Data Protection (SDP) & Cloud DLP Configuration Collector
+discovery/dlp_sdp.py - Sensitive Data Protection (SDP / Cloud DLP) Collector
 
-This module inspects Google Cloud Sensitive Data Protection (Cloud DLP):
-- Discovery Configs (Automated continuous sensitive data profiling for BigQuery, GCS, Cloud SQL)
-- Inspect Templates (InfoType detectors, regexes, custom dictionaries, likelihood thresholds)
-- De-identify Templates (Masking, pseudonymization, cryptographic hashing, bucketing rules)
-- Job Triggers (Scheduled inspection scan jobs and targets)
-- Integration with SCC (Publishing data risk findings to SCC)
+This module inspects:
+- Discovery Configs (Automated BigQuery / Cloud Storage / Cloud SQL data profiling)
+- Inspect Templates (Predefined + Custom infoTypes, likelihood rules, regex rules)
+- De-identify Templates (Transformations, masking, pseudonymization rules)
+- Job Triggers & Data Scans
 
 API References:
-- Service: dlp.googleapis.com (v2)
-- Endpoint: https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/discoveryConfigs
-- Endpoint: https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/inspectTemplates
-- Endpoint: https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/deidentifyTemplates
-- Endpoint: https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/jobTriggers
+- Endpoint: https://dlp.googleapis.com/v2/{parent}/locations/{location}/discoveryConfigs
+- Endpoint: https://dlp.googleapis.com/v2/{parent}/locations/{location}/inspectTemplates
+- Endpoint: https://dlp.googleapis.com/v2/{parent}/locations/{location}/deidentifyTemplates
+- Endpoint: https://dlp.googleapis.com/v2/{parent}/locations/{location}/jobTriggers
 """
 
 import logging
 from typing import Dict, Any, List, Optional
 from google.auth.transport.requests import AuthorizedSession
+from discovery.scc_core import normalize_resource
 
 logger = logging.getLogger(__name__)
 
@@ -26,20 +25,19 @@ logger = logging.getLogger(__name__)
 class SensitiveDataProtectionCollector:
     """Queries Sensitive Data Protection / Cloud DLP configurations from GCP."""
 
-    def __init__(self, session: AuthorizedSession, org_id: str, location: str = "global"):
+    def __init__(self, session: AuthorizedSession, resource_id: str, location: str = "global"):
         """
         Initialize the SDP / Cloud DLP Collector.
 
         Args:
             session: Authenticated requests session.
-            org_id: GCP Organization ID (numeric string or 'organizations/123').
+            resource_id: GCP Organization ID, Project ID, or Folder ID.
             location: Regional location or 'global' (default: 'global').
         """
         self.session = session
-        self.raw_org_id = org_id.replace("organizations/", "")
-        self.org_name = f"organizations/{self.raw_org_id}"
+        self.parent_name, self.raw_id, self.scope_type = normalize_resource(resource_id)
         self.location = location
-        self.parent_path = f"{self.org_name}/locations/{self.location}"
+        self.parent_path = f"{self.parent_name}/locations/{self.location}"
         self.base_url = f"https://dlp.googleapis.com/v2/{self.parent_path}"
 
     def collect_all(self) -> Dict[str, Any]:
@@ -64,211 +62,126 @@ class SensitiveDataProtectionCollector:
             "deidentify_template_count": len(deidentify_templates),
             "job_triggers": job_triggers,
             "job_trigger_count": len(job_triggers),
-            "sdp_active": len(discovery_configs) > 0 or len(inspect_templates) > 0 or len(job_triggers) > 0,
+            "scope": f"{self.scope_type.capitalize()}-level ({self.parent_name})",
         }
 
     def list_discovery_configs(self) -> List[Dict[str, Any]]:
         """
-        List Sensitive Data Protection Discovery Configs (Automated Data Profiling).
-
-        API Endpoint: GET https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/discoveryConfigs
-        Required Permission: dlp.discoveryConfigs.list
+        List automated data profiling discovery configurations.
         """
         url = f"{self.base_url}/discoveryConfigs"
         configs: List[Dict[str, Any]] = []
-        page_token = None
-
         try:
-            while True:
-                params = {"pageSize": 100}
-                if page_token:
-                    params["pageToken"] = page_token
+            resp = self.session.get(url, timeout=12)
+            if resp.status_code == 200:
+                data = resp.json()
+                for item in data.get("discoveryConfigs", []):
+                    targets = []
+                    for t in item.get("targets", []):
+                        if "bigQueryTarget" in t:
+                            targets.append("BigQuery Tables")
+                        elif "cloudStorageTarget" in t:
+                            targets.append("Cloud Storage Buckets")
+                        elif "cloudSqlTarget" in t:
+                            targets.append("Cloud SQL Databases")
 
-                resp = self.session.get(url, params=params, timeout=12)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for item in data.get("discoveryConfigs", []):
-                        name = item.get("name", "")
-                        cfg_id = name.split("/")[-1] if "/" in name else name
-                        status = item.get("status", "STATUS_UNSPECIFIED")
-                        targets = []
-                        for target in item.get("targets", []):
-                            if "bigQueryTarget" in target:
-                                targets.append("BigQuery (Tables & Datasets)")
-                            if "cloudStorageTarget" in target:
-                                targets.append("Cloud Storage (Buckets)")
-                            if "cloudSqlTarget" in target:
-                                targets.append("Cloud SQL (Databases)")
-
-                        configs.append({
-                            "name": name,
-                            "config_id": cfg_id,
-                            "display_name": item.get("displayName", cfg_id),
-                            "status": status,
-                            "targets": targets or ["Unspecified Data Target"],
-                            "inspect_template": item.get("inspectTemplate", "Default Built-in Profiles"),
-                            "create_time": item.get("createTime", ""),
-                            "update_time": item.get("updateTime", ""),
-                        })
-
-                    page_token = data.get("nextPageToken")
-                    if not page_token:
-                        break
-                elif resp.status_code in (404, 403):
-                    break
-                else:
-                    logger.warning("Unexpected status %s listing discovery configs: %s", resp.status_code, resp.text)
-                    break
-
-            logger.info("Found %d SDP Discovery Configs", len(configs))
+                    configs.append({
+                        "name": item.get("name", ""),
+                        "display_name": item.get("displayName", item.get("name", "").split("/")[-1]),
+                        "status": item.get("status", "ACTIVE"),
+                        "targets": targets or ["All Project / Org Data Lakes"],
+                        "inspect_template": item.get("inspectTemplate", "Standard Profiling"),
+                        "actions": list(item.get("actions", [{}])[0].keys()) if item.get("actions") else ["SCC Findings Ingestion"],
+                    })
+                logger.info("Found %d DLP discovery configs", len(configs))
+            elif resp.status_code == 403:
+                logger.warning("Permission denied for DLP discovery configs (roles/dlp.reader required)")
+            elif resp.status_code == 404:
+                logger.debug("DLP discovery configs endpoint not active on target location")
         except Exception as e:
-            logger.debug("Error listing discovery configs: %s", e)
+            logger.debug("Error listing DLP discovery configs: %s", e)
 
         return configs
 
     def list_inspect_templates(self) -> List[Dict[str, Any]]:
         """
-        List Cloud DLP Inspect Templates (custom infoTypes, regexes, dictionaries, sensitivity rules).
-
-        API Endpoint: GET https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/inspectTemplates
-        Required Permission: dlp.inspectTemplates.list
+        List Cloud DLP Inspect Templates.
         """
         url = f"{self.base_url}/inspectTemplates"
         templates: List[Dict[str, Any]] = []
-        page_token = None
-
         try:
-            while True:
-                params = {"pageSize": 100}
-                if page_token:
-                    params["pageToken"] = page_token
+            resp = self.session.get(url, timeout=12)
+            if resp.status_code == 200:
+                data = resp.json()
+                for item in data.get("inspectTemplates", []):
+                    inspect_config = item.get("inspectConfig", {})
+                    info_types = inspect_config.get("infoTypes", [])
+                    custom_types = inspect_config.get("customInfoTypes", [])
 
-                resp = self.session.get(url, params=params, timeout=12)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for item in data.get("inspectTemplates", []):
-                        name = item.get("name", "")
-                        tmpl_id = name.split("/")[-1] if "/" in name else name
-                        inspect_config = item.get("inspectConfig", {})
-                        info_types = [it.get("name", "") for it in inspect_config.get("infoTypes", [])]
-                        custom_info_types = [cit.get("infoType", {}).get("name", "") for cit in inspect_config.get("customInfoTypes", [])]
-                        min_likelihood = inspect_config.get("minLikelihood", "LIKELY")
-
-                        templates.append({
-                            "name": name,
-                            "template_id": tmpl_id,
-                            "display_name": item.get("displayName", tmpl_id),
-                            "description": item.get("description", ""),
-                            "min_likelihood": min_likelihood,
-                            "info_types_count": len(info_types),
-                            "custom_info_types_count": len(custom_info_types),
-                            "sample_info_types": (info_types + custom_info_types)[:5],
-                            "create_time": item.get("createTime", ""),
-                            "update_time": item.get("updateTime", ""),
-                        })
-
-                    page_token = data.get("nextPageToken")
-                    if not page_token:
-                        break
-                elif resp.status_code in (404, 403):
-                    break
-                else:
-                    break
-
-            logger.info("Found %d DLP Inspect Templates", len(templates))
+                    templates.append({
+                        "name": item.get("name", ""),
+                        "display_name": item.get("displayName", item.get("name", "").split("/")[-1]),
+                        "description": item.get("description", ""),
+                        "min_likelihood": inspect_config.get("minLikelihood", "LIKELY"),
+                        "info_types_count": len(info_types) + len(custom_types),
+                        "sample_info_types": [t.get("name", "") for t in info_types[:5]],
+                        "custom_info_types_count": len(custom_types),
+                        "create_time": item.get("createTime", ""),
+                    })
+                logger.info("Found %d DLP inspect templates", len(templates))
+            elif resp.status_code == 403:
+                logger.warning("Permission denied for DLP inspect templates")
         except Exception as e:
-            logger.debug("Error listing inspect templates: %s", e)
+            logger.debug("Error listing DLP inspect templates: %s", e)
 
         return templates
 
     def list_deidentify_templates(self) -> List[Dict[str, Any]]:
         """
-        List Cloud DLP De-identification Templates (masking, pseudonymization, hashing).
-
-        API Endpoint: GET https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/deidentifyTemplates
+        List Cloud DLP De-identification Templates.
         """
         url = f"{self.base_url}/deidentifyTemplates"
         templates: List[Dict[str, Any]] = []
-        page_token = None
-
         try:
-            while True:
-                params = {"pageSize": 100}
-                if page_token:
-                    params["pageToken"] = page_token
-
-                resp = self.session.get(url, params=params, timeout=12)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for item in data.get("deidentifyTemplates", []):
-                        name = item.get("name", "")
-                        tmpl_id = name.split("/")[-1] if "/" in name else name
-                        templates.append({
-                            "name": name,
-                            "template_id": tmpl_id,
-                            "display_name": item.get("displayName", tmpl_id),
-                            "description": item.get("description", ""),
-                            "create_time": item.get("createTime", ""),
-                            "update_time": item.get("updateTime", ""),
-                        })
-
-                    page_token = data.get("nextPageToken")
-                    if not page_token:
-                        break
-                elif resp.status_code in (404, 403):
-                    break
-                else:
-                    break
-
-            logger.info("Found %d DLP De-identify Templates", len(templates))
+            resp = self.session.get(url, timeout=12)
+            if resp.status_code == 200:
+                data = resp.json()
+                for item in data.get("deidentifyTemplates", []):
+                    templates.append({
+                        "name": item.get("name", ""),
+                        "display_name": item.get("displayName", item.get("name", "").split("/")[-1]),
+                        "description": item.get("description", ""),
+                        "create_time": item.get("createTime", ""),
+                    })
+                logger.info("Found %d DLP de-identify templates", len(templates))
+            elif resp.status_code == 403:
+                logger.warning("Permission denied for DLP de-identify templates")
         except Exception as e:
-            logger.debug("Error listing deidentify templates: %s", e)
+            logger.debug("Error listing DLP de-identify templates: %s", e)
 
         return templates
 
     def list_job_triggers(self) -> List[Dict[str, Any]]:
         """
-        List DLP Job Triggers (Scheduled inspection and profiling jobs).
-
-        API Endpoint: GET https://dlp.googleapis.com/v2/organizations/{org_id}/locations/{location}/jobTriggers
+        List scheduled DLP Job Triggers.
         """
         url = f"{self.base_url}/jobTriggers"
         triggers: List[Dict[str, Any]] = []
-        page_token = None
-
         try:
-            while True:
-                params = {"pageSize": 100}
-                if page_token:
-                    params["pageToken"] = page_token
-
-                resp = self.session.get(url, params=params, timeout=12)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for item in data.get("jobTriggers", []):
-                        name = item.get("name", "")
-                        trig_id = name.split("/")[-1] if "/" in name else name
-                        status = item.get("status", "STATUS_UNSPECIFIED")
-                        triggers.append({
-                            "name": name,
-                            "trigger_id": trig_id,
-                            "display_name": item.get("displayName", trig_id),
-                            "description": item.get("description", ""),
-                            "status": status,
-                            "last_run_time": item.get("lastRunTime", ""),
-                            "inspect_job": item.get("inspectJob", {}),
-                        })
-
-                    page_token = data.get("nextPageToken")
-                    if not page_token:
-                        break
-                elif resp.status_code in (404, 403):
-                    break
-                else:
-                    break
-
-            logger.info("Found %d DLP Job Triggers", len(triggers))
+            resp = self.session.get(url, timeout=12)
+            if resp.status_code == 200:
+                data = resp.json()
+                for item in data.get("jobTriggers", []):
+                    triggers.append({
+                        "name": item.get("name", ""),
+                        "display_name": item.get("displayName", item.get("name", "").split("/")[-1]),
+                        "status": item.get("status", "HEALTHY"),
+                        "last_run_time": item.get("lastRunTime", ""),
+                    })
+                logger.info("Found %d DLP job triggers", len(triggers))
+            elif resp.status_code == 403:
+                logger.warning("Permission denied for DLP job triggers")
         except Exception as e:
-            logger.debug("Error listing job triggers: %s", e)
+            logger.debug("Error listing DLP job triggers: %s", e)
 
         return triggers

@@ -18,46 +18,51 @@ It models an enterprise-grade Google Cloud environment running SCC Enterprise wi
 - Full Organization, Folder, and Project hierarchy coverage
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from discovery.scc_core import normalize_resource
 
 
-def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
+def get_mock_discovery_data(resource_id: Optional[str] = None, org_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Generate a full synthetic discovery dictionary.
 
     Args:
-        org_id: Mock organization ID to embed in the report.
+        resource_id: Mock organization ID, project ID, or folder ID.
+        org_id: Backward-compatible alias for resource_id.
 
     Returns:
         Dict matching the schema produced by live GCP discovery collectors.
     """
-    raw_org_id = org_id.replace("organizations/", "")
-    org_name = f"organizations/{raw_org_id}"
+    target = resource_id or org_id or "819203948571"
+    parent_name, raw_id, scope_type = normalize_resource(target)
+    is_org = (scope_type == "ORGANIZATION")
+    org_name = parent_name if is_org else f"projects/{raw_id}"
 
     return {
         "metadata": {
             "mode": "DEMO / SYNTHETIC DATASET",
-            "organization_id": raw_org_id,
-            "organization_name": org_name,
-            "domain": "enterprise-corp.com",
+            "organization_id": raw_id,
+            "organization_name": parent_name,
+            "domain": "enterprise-corp.com" if is_org else f"{raw_id}.cloud",
             "caller_identity": "secops-architect@enterprise-corp.com (Cloud Security Architect)",
             "discovery_timestamp": "2026-08-27T16:30:00Z",
             "primary_location": "global",
+            "scope_type": scope_type,
         },
         "scc_core": {
             "tier_info": {
-                "tier_name": "Enterprise Tier",
-                "tier_code": "ENTERPRISE",
-                "description": "Full Multi-Cloud Security Posture, Advanced Threat Detection (ETD/CTD/VMTD), Posture Management, and Governance.",
-                "is_enterprise": True,
-                "posture_api_status": "ACTIVE",
-                "scope": "Organization-wide (Inherited)",
-                "org_name": org_name,
+                "tier_name": "Enterprise Tier" if is_org else "Standard Tier (Project Scope)",
+                "tier_code": "ENTERPRISE" if is_org else "STANDARD",
+                "description": "Full Multi-Cloud Security Posture, Advanced Threat Detection (ETD/CTD/VMTD), Posture Management, and Governance." if is_org else "Project-Scoped Security Command Center & Security Health Analytics.",
+                "is_enterprise": is_org,
+                "posture_api_status": "ACTIVE" if is_org else "NOT_CONFIGURED",
+                "scope": f"{scope_type.capitalize()}-level ({parent_name})",
+                "org_name": parent_name,
                 "location": "global",
             },
             "organization_settings": {
-                "status": "SUCCESS",
-                "name": f"{org_name}/organizationSettings",
+                "status": "SUCCESS" if is_org else f"NOT_APPLICABLE ({scope_type.capitalize()} Scope)",
+                "name": f"{parent_name}/organizationSettings" if is_org else parent_name,
                 "enable_asset_discovery": True,
                 "asset_discovery_mode": "AUTOMATIC",
                 "asset_discovery_config": {
@@ -226,12 +231,13 @@ def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
                 {"name": f"{org_name}/sources/2003", "source_id": "2003", "display_name": "Custom SecOps Egress Sensor", "description": "Internal Custom Python Security Tool Findings", "is_builtin": False, "type": "INTEGRATED_VENDOR"}
             ],
             "setup_details": {
-                "organization_id": raw_org_id,
-                "organization_name": org_name,
+                "organization_id": raw_id,
+                "organization_name": parent_name,
+                "scope_type": scope_type,
                 "primary_location": "global",
-                "scc_service_agent": f"service-org-{raw_org_id}@security-center-api.iam.gserviceaccount.com",
-                "dlp_service_agent": f"service-org-{raw_org_id}@gcp-sa-dlp.iam.gserviceaccount.com",
-                "asset_discovery_status": "AUTOMATIC",
+                "scc_service_agent": f"service-org-{raw_id}@security-center-api.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-scc.iam.gserviceaccount.com",
+                "dlp_service_agent": f"service-org-{raw_id}@gcp-sa-dlp.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-dlp.iam.gserviceaccount.com",
+                "asset_discovery_status": "AUTOMATIC" if is_org else "PROJECT_MANAGED",
                 "api_endpoints_active": [
                     "securitycenter.googleapis.com (v1/v2)",
                     "securityposture.googleapis.com (v1)",
@@ -466,7 +472,7 @@ def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
                     "topic_short": "scc-critical-findings",
                     "filter": 'state = "ACTIVE" AND severity = "CRITICAL"',
                     "description": "Streams critical active threats immediately to incident response pipeline.",
-                    "service_account": f"service-org-{raw_org_id}@security-center-api.iam.gserviceaccount.com"
+                    "service_account": f"service-org-{raw_id}@security-center-api.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-scc.iam.gserviceaccount.com"
                 },
                 {
                     "name": f"{org_name}/notificationConfigs/jira-ticket-bridge",
@@ -475,7 +481,7 @@ def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
                     "topic_short": "scc-jira-autoticketing",
                     "filter": 'state = "ACTIVE" AND (severity = "HIGH" OR severity = "CRITICAL") AND finding_class = "VULNERABILITY"',
                     "description": "Triggers automated Jira ticket creation for software vulnerabilities.",
-                    "service_account": f"service-org-{raw_org_id}@security-center-api.iam.gserviceaccount.com"
+                    "service_account": f"service-org-{raw_id}@security-center-api.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-scc.iam.gserviceaccount.com"
                 },
                 {
                     "name": f"{org_name}/notificationConfigs/chronicle-siem-feed",
@@ -484,7 +490,7 @@ def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
                     "topic_short": "scc-all-events-siem",
                     "filter": 'state = "ACTIVE"',
                     "description": "Complete real-time stream of all SCC findings forwarded to Google SecOps / Chronicle SIEM.",
-                    "service_account": f"service-org-{raw_org_id}@security-center-api.iam.gserviceaccount.com"
+                    "service_account": f"service-org-{raw_id}@security-center-api.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-scc.iam.gserviceaccount.com"
                 }
             ],
             "pubsub_export_count": 3,
@@ -496,7 +502,7 @@ def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
                     "dataset_short": "scc_security_analytics",
                     "filter": 'state = "ACTIVE" OR state = "RESOLVED"',
                     "description": "Continuous streaming export of all finding states for audit & reporting.",
-                    "principal": f"service-org-{raw_org_id}@security-center-api.iam.gserviceaccount.com",
+                    "principal": f"service-org-{raw_id}@security-center-api.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-scc.iam.gserviceaccount.com",
                     "create_time": "2024-02-10T10:00:00Z",
                     "update_time": "2026-01-15T12:00:00Z"
                 },
@@ -507,7 +513,7 @@ def get_mock_discovery_data(org_id: str = "819203948571") -> Dict[str, Any]:
                     "dataset_short": "scc_compliance_snapshots",
                     "filter": 'finding_class = "MISCONFIGURATION"',
                     "description": "Dedicated dataset for historical compliance evidence and quarterly auditor reports.",
-                    "principal": f"service-org-{raw_org_id}@security-center-api.iam.gserviceaccount.com",
+                    "principal": f"service-org-{raw_id}@security-center-api.iam.gserviceaccount.com" if is_org else f"service-{raw_id}@gcp-sa-scc.iam.gserviceaccount.com",
                     "create_time": "2024-05-20T08:00:00Z",
                     "update_time": "2026-03-10T14:30:00Z"
                 }
