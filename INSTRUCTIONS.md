@@ -358,6 +358,35 @@ The generated PDF is an 8-page, publication-quality document containing:
 7. **Section 6 - Asset Inventory & Hierarchy Coverage**: Resource counts across Compute, Storage, Databases, IAM, and Networking, plus complete folder/project hierarchy.
 8. **Section 7 - Cloud Security Migration Blueprint**: Architectural translation matrix and 4-phase turnkey migration execution roadmap.
 
+---
+
+### How the Readiness Score & Readiness State Are Determined
+
+The **Security Platform Migration Readiness Score (0 - 100)** and **Readiness State** in Section 1 (Executive Summary & Security Migration Scorecard) provide an objective assessment of how smoothly the discovered Google Cloud environment can be onboarded and mapped to a modern cloud security architecture.
+
+#### 1. The 6 Assessment Dimensions & Scoring Weights
+
+The total score (out of 100) is calculated by evaluating 6 key technical dimensions:
+
+| Assessment Dimension | Max Points | Evaluation Criteria & Scoring Logic | Readiness State |
+| :--- | :---: | :--- | :--- |
+| **Organization Hierarchy & Coverage** | **25 pts** | Evaluates the percentage of resource hierarchy covered by the audit. Scored proportionally as `(Coverage% / 100) * 25`. Full project-level or org-level visibility ensures frictionless cloud connector discovery. | `EXCELLENT` (≥20 pts)<br/>`GOOD` (<20 pts) |
+| **Compliance & Benchmark Alignment** | **20 pts** | Evaluates active compliance frameworks (CIS GCP Foundations, NIST SP 800-53, PCI-DSS, ISO 27001, SOC 2, HIPAA). Awarded **20 pts** when standard frameworks are active (100% native coverage in target platform); **10 pts** if none are configured. | `EXCELLENT` |
+| **Custom Detection Rules Translation** | **15 pts** | Assesses the volume of custom Security Health Analytics (SHA) rules and Event Threat Detection (ETD) modules to convert into custom security posture controls.<br/>• **15 pts**: $\le 10$ custom rules.<br/>• **10 pts**: $> 10$ custom rules. | `LOW COMPLEXITY` (≤10 rules)<br/>`MODERATE COMPLEXITY` (>10 rules) |
+| **Data Security Posture (DSPM)** | **15 pts** | Evaluates Sensitive Data Protection / Cloud DLP inspect templates and profiling discovery configs for migration to data classifiers.<br/>• **15 pts**: Active inspect templates present.<br/>• **12 pts**: Baseline DSPM compatibility ready. | `READY` |
+| **Alerting & Ticketing Automation** | **15 pts** | Evaluates continuous export pipelines (Pub/Sub topics, BigQuery streaming tables) and ITSM ticketing bridges (Jira, ServiceNow, SIEM).<br/>• **15 pts**: Active continuous exports or ticketing bridges present.<br/>• **10 pts**: Baseline integration pipeline ready. | `READY` |
+| **Mute Rules & Exception Policy Porting** | **10 pts** | Evaluates active Common Expression Language (CEL) finding mute rules to port into target exception policies with business owners and TTLs.<br/>• **10 pts**: $\le 10$ mute rules.<br/>• **7 pts**: $> 10$ mute rules. | `READY` (≤10 rules)<br/>`MODERATE COMPLEXITY` (>10 rules) |
+
+#### 2. Overall Readiness Tier, Complexity Rating & Transition Timeline
+
+The composite score maps to an executive readiness tier and estimated migration timeline:
+
+| Total Score | Readiness Rating | Complexity Level | Estimated Migration Timeline | Description |
+| :---: | :--- | :--- | :---: | :--- |
+| **85 – 100** | **HIGH READINESS** *(Rapid Turnkey Migration)* | **LOW TO MODERATE** | **2 – 4 Weeks** | Environment has clean hierarchy coverage, standard compliance frameworks, minimal custom rule overhead, and direct 1-to-1 capability alignment. |
+| **70 – 84** | **MODERATE READINESS** | **MODERATE** | **4 – 6 Weeks** | Environment contains a moderate volume of custom detection logic, specialized DLP profiling, or extensive mute rules requiring structured policy translation. |
+| **< 70** | **COMPLEX MIGRATION** | **HIGH** | **6 – 8 Weeks** | High volume of custom detection rules, complex multi-folder hierarchy exceptions, or bespoke SIEM streaming pipelines requiring phased migration sprints. |
+
 ### Raw JSON Dataset (`scc_discovery_raw.json`)
 Contains the full machine-readable JSON structure for programmatic analysis or import.
 
