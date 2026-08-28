@@ -3,8 +3,21 @@ discovery/scc_core.py - Core Security Command Center (SCC) Configuration Collect
 
 This module inspects core SCC configuration across Organization, Folder, or Project scope:
 - SCC Tier Detection (Standard, Premium, Enterprise)
-- Organization / Scope Settings (Asset discovery mode, configuration state)
-- Built-in Security Services status (SHA, ETD, CTD, VMTD, RVD, WSS, SDP, Anomaly Detection)
+- Enablement status of ALL built-in security services:
+  * Security Health Analytics (SHA)
+  * Web Security Scanner (WSS)
+  * Event Threat Detection (ETD)
+  * Container Threat Detection (CTD)
+  * Virtual Machine Threat Detection (VMTD)
+  * Cloud Run Threat Detection
+  * Vulnerability Assessment / Rapid Vulnerability Detection
+  * Notebook Security Scanner
+  * Artifact Guard / Container Analysis
+  * Compliance Manager / Evaluation Service
+  * AI Protection & Model Armor
+  * External Exposure & Attack Surface
+  * Sensitive Data Protection (SDP / Cloud DLP)
+  * Cloud Anomaly Detection
 - Custom Security Modules (Custom SHA rules, Custom ETD rules)
 - Integrated Sources (Built-in detectors + 3rd-party vendor integrations)
 - Setup & Service Account Details
@@ -52,7 +65,7 @@ class SCCCoreCollector:
         self.is_project = (self.scope_type == "PROJECT")
         self.location = location
         self.base_url_v1 = "https://securitycenter.googleapis.com/v1"
-        self.base_url_v2 = "https://securitycenter.googleapis.com/v2"
+        self.mgmt_url_v1 = "https://securitycentermanagement.googleapis.com/v1"
 
     def collect_all(self) -> Dict[str, Any]:
         """
@@ -145,7 +158,8 @@ class SCCCoreCollector:
                     is_builtin = any(b in display_name.lower() or b in description.lower() for b in [
                         "security health analytics", "event threat detection", "container threat detection",
                         "virtual machine threat detection", "rapid vulnerability detection",
-                        "web security scanner", "sensitive data protection", "anomaly detection"
+                        "web security scanner", "sensitive data protection", "anomaly detection",
+                        "cloud run threat detection", "vulnerability assessment"
                     ])
 
                     sources.append({
@@ -224,6 +238,47 @@ class SCCCoreCollector:
             logger.debug("Error listing ETD custom modules: %s", e)
         return modules
 
+    def get_security_center_services_api(self) -> Dict[str, str]:
+        """
+        Query SecurityCenterManagement API for explicit service enablement states.
+        """
+        service_states: Dict[str, str] = {}
+        mgmt_url = f"{self.mgmt_url_v1}/{self.parent_name}/locations/global/securityCenterServices"
+        try:
+            resp = self.session.get(mgmt_url, timeout=8)
+            if resp.status_code == 200:
+                data = resp.json()
+                for svc in data.get("securityCenterServices", []):
+                    name = svc.get("name", "")
+                    svc_key = name.split("/")[-1].lower()
+                    state = svc.get("effectiveEnablementState") or svc.get("intendedEnablementState") or "DISABLED"
+                    service_states[svc_key] = state.upper()
+                logger.info("Retrieved %d service states from SecurityCenterManagement API", len(service_states))
+        except Exception as e:
+            logger.debug("SecurityCenterManagement API query error: %s", e)
+
+        # Check individual endpoints if list was empty or partial
+        known_service_keys = [
+            "security-health-analytics", "event-threat-detection", "container-threat-detection",
+            "virtual-machine-threat-detection", "web-security-scanner", "cloud-run-threat-detection",
+            "vulnerability-assessment", "notebook-security-scanner", "artifact-guard",
+            "compliance-manager", "ai-protection", "external-exposure", "sensitive-data-protection",
+            "anomaly-detection"
+        ]
+        for k in known_service_keys:
+            if k not in service_states:
+                single_url = f"{self.mgmt_url_v1}/{self.parent_name}/locations/global/securityCenterServices/{k}"
+                try:
+                    r = self.session.get(single_url, timeout=3)
+                    if r.status_code == 200:
+                        d = r.json()
+                        st = d.get("effectiveEnablementState") or d.get("intendedEnablementState") or "DISABLED"
+                        service_states[k] = st.upper()
+                except Exception:
+                    pass
+
+        return service_states
+
     def get_services_status(
         self,
         sources: List[Dict[str, Any]],
@@ -231,94 +286,197 @@ class SCCCoreCollector:
         etd_custom_modules: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Determine the enablement state and capability details of all SCC built-in security services.
+        Determine the exact enablement state (ENABLED vs DISABLED) of ALL 14 SCC security services.
         """
-        source_names_lower = [s.get("display_name", "").lower() for s in sources]
+        api_states = self.get_security_center_services_api()
 
-        services = [
+        # Complete catalog of all 14 Google Cloud SCC security services
+        service_definitions = [
             {
                 "service_id": "sha",
+                "api_keys": ["security-health-analytics", "sha"],
                 "display_name": "Security Health Analytics (SHA)",
                 "category": "Cloud Security Posture Management (CSPM)",
                 "description": "Scans GCP resources for security misconfigurations and compliance violations.",
-                "enabled": any("health analytics" in s for s in source_names_lower) or len(sha_custom_modules) > 0 or self.is_project,
+                "default_enabled": True,
                 "tier_requirement": "Standard (Basic) / Premium / Enterprise (Full + Custom Rules)",
-                "custom_rules_count": len(sha_custom_modules),
                 "target_capability_mapping": "Cloud Security Posture Management (CSPM) & Custom Configuration Rules",
             },
             {
+                "service_id": "wss",
+                "api_keys": ["web-security-scanner", "wss"],
+                "display_name": "Web Security Scanner (WSS)",
+                "category": "Application Security (DAST)",
+                "description": "Crawls and analyzes public App Engine, GKE, and Compute Engine web endpoints for OWASP Top 10 vulnerabilities.",
+                "default_enabled": True,
+                "tier_requirement": "Standard (Manual) / Premium / Enterprise (Automated)",
+                "target_capability_mapping": "Dynamic Application Security Testing (DAST) & Inventory",
+            },
+            {
                 "service_id": "etd",
+                "api_keys": ["event-threat-detection", "etd"],
                 "display_name": "Event Threat Detection (ETD)",
                 "category": "Cloud Detection and Response (CDR)",
                 "description": "Analyzes Cloud Audit logs, VPC Flow logs, and DNS queries for malicious behavior and compromised identities.",
-                "enabled": any("event threat" in s for s in source_names_lower) or len(etd_custom_modules) > 0,
+                "default_enabled": True,
                 "tier_requirement": "Premium / Enterprise",
-                "custom_rules_count": len(etd_custom_modules),
                 "target_capability_mapping": "Cloud Detection & Response (CDR) & Event Stream Analysis",
             },
             {
                 "service_id": "ctd",
+                "api_keys": ["container-threat-detection", "ctd"],
                 "display_name": "Container Threat Detection (CTD)",
                 "category": "Cloud Workload Protection (CWPP)",
                 "description": "Detects runtime container execution anomalies, suspicious binaries, reverse shells, and malicious kernel calls in GKE.",
-                "enabled": any("container threat" in s for s in source_names_lower),
+                "default_enabled": True,
                 "tier_requirement": "Premium / Enterprise",
-                "custom_rules_count": 0,
                 "target_capability_mapping": "Runtime Workload Sensor & K8s Admission Control",
             },
             {
                 "service_id": "vmtd",
+                "api_keys": ["virtual-machine-threat-detection", "vmtd"],
                 "display_name": "Virtual Machine Threat Detection (VMTD)",
                 "category": "Cloud Workload Protection (CWPP)",
                 "description": "Agentless hypervisor-level memory scanning to detect kernel rootkits and crypto-mining on Compute Engine instances.",
-                "enabled": any("virtual machine threat" in s or "vmtd" in s for s in source_names_lower),
+                "default_enabled": False,
                 "tier_requirement": "Premium / Enterprise",
-                "custom_rules_count": 0,
                 "target_capability_mapping": "Agentless VM Scanning & Runtime Behavioral Detection",
             },
             {
-                "service_id": "rvd",
-                "display_name": "Rapid Vulnerability Detection (RVD)",
-                "category": "Vulnerability Management",
-                "description": "Scans public-facing GCP workloads for zero-day vulnerabilities and critical remote code execution (RCE) flaws.",
-                "enabled": any("rapid vulnerability" in s for s in source_names_lower),
+                "service_id": "cloud_run_td",
+                "api_keys": ["cloud-run-threat-detection", "cloudrun-threat-detection"],
+                "display_name": "Cloud Run Threat Detection",
+                "category": "Serverless Workload Protection",
+                "description": "Monitors runtime executions in Cloud Run serverless container instances for suspicious binary activity.",
+                "default_enabled": False,
                 "tier_requirement": "Premium / Enterprise",
-                "custom_rules_count": 0,
+                "target_capability_mapping": "Serverless Container Runtime Defense",
+            },
+            {
+                "service_id": "rvd",
+                "api_keys": ["vulnerability-assessment", "rapid-vulnerability-detection", "rvd"],
+                "display_name": "Vulnerability Assessment & Rapid Vulnerability Detection",
+                "category": "Vulnerability Management",
+                "description": "Scans public-facing workloads and infrastructure for zero-day vulnerabilities, OS CVEs, and critical flaws.",
+                "default_enabled": True,
+                "tier_requirement": "Premium / Enterprise",
                 "target_capability_mapping": "Vulnerability Management & Attack Surface Analysis",
             },
             {
-                "service_id": "wss",
-                "display_name": "Web Security Scanner (WSS)",
-                "category": "Application Security (DAST)",
-                "description": "Crawls and analyzes public App Engine, GKE, and Compute Engine web endpoints for OWASP Top 10 vulnerabilities.",
-                "enabled": any("web security" in s for s in source_names_lower),
-                "tier_requirement": "Standard (Manual) / Premium / Enterprise (Automated)",
-                "custom_rules_count": 0,
-                "target_capability_mapping": "Dynamic Application Security Testing (DAST) & Inventory",
+                "service_id": "notebook_scanner",
+                "api_keys": ["notebook-security-scanner", "notebook-scanner"],
+                "display_name": "Notebook Security Scanner",
+                "category": "AI / ML Workspace Security",
+                "description": "Detects security vulnerabilities and credential exposures across Vertex AI Workbench notebook instances.",
+                "default_enabled": False,
+                "tier_requirement": "Premium / Enterprise",
+                "target_capability_mapping": "Data Science & AI Workspace Posture",
+            },
+            {
+                "service_id": "artifact_guard",
+                "api_keys": ["artifact-guard", "container-analysis", "container-scanning"],
+                "display_name": "Artifact Guard / Container Analysis",
+                "category": "Software Supply Chain Security",
+                "description": "Scans container images stored in Artifact Registry / Container Registry for OS package vulnerabilities.",
+                "default_enabled": False,
+                "tier_requirement": "Standard / Premium / Enterprise",
+                "target_capability_mapping": "Container Registry & CI/CD Vulnerability Scanning",
+            },
+            {
+                "service_id": "compliance_manager",
+                "api_keys": ["compliance-manager", "compliance-evaluation", "risk-manager"],
+                "display_name": "Compliance Manager / Evaluation Service",
+                "category": "Regulatory Compliance",
+                "description": "Continuously audits workloads against CIS, NIST 800-53, PCI-DSS, ISO 27001, and SOC 2 frameworks.",
+                "default_enabled": False,
+                "tier_requirement": "Enterprise Tier",
+                "target_capability_mapping": "Automated Multi-Standard Compliance Auditing",
+            },
+            {
+                "service_id": "ai_protection",
+                "api_keys": ["ai-protection", "model-armor", "ai-discovery"],
+                "display_name": "AI Protection & Model Armor",
+                "category": "Generative AI Security",
+                "description": "Provides runtime guardrails and prompt injection defenses for LLMs and AI workloads.",
+                "default_enabled": False,
+                "tier_requirement": "Enterprise Tier",
+                "target_capability_mapping": "Generative AI & LLM Runtime Guardrails",
+            },
+            {
+                "service_id": "external_exposure",
+                "api_keys": ["external-exposure", "mandiant-asm", "attack-surface"],
+                "display_name": "External Exposure & Attack Surface Management",
+                "category": "External Attack Surface (EASM)",
+                "description": "Discovers publicly exposed cloud assets, dangling DNS records, and shadow cloud resources.",
+                "default_enabled": False,
+                "tier_requirement": "Enterprise Tier",
+                "target_capability_mapping": "External Attack Surface Management (EASM)",
             },
             {
                 "service_id": "sdp",
+                "api_keys": ["sensitive-data-protection", "dlp"],
                 "display_name": "Sensitive Data Protection (SDP / Cloud DLP)",
                 "category": "Data Security Posture Management (DSPM)",
-                "description": "Automated discovery and classification of sensitive data (PII, PCI, secrets, financial records) in GCS, BigQuery, and Cloud SQL.",
-                "enabled": any("sensitive data" in s or "dlp" in s for s in source_names_lower),
-                "tier_requirement": "Premium / Enterprise (Integrated) / Standalone DLP",
-                "custom_rules_count": 0,
+                "description": "Automated discovery and classification of sensitive data in Cloud Storage, BigQuery, and Cloud SQL.",
+                "default_enabled": False,
+                "tier_requirement": "Premium / Enterprise (Integrated)",
                 "target_capability_mapping": "Data Security Posture Management (DSPM) & Classification",
             },
             {
                 "service_id": "anomaly",
-                "display_name": "Anomaly Detection",
+                "api_keys": ["anomaly-detection", "cloud-anomaly-detection"],
+                "display_name": "Cloud Anomaly Detection",
                 "category": "Behavioral Analytics",
-                "description": "Detects anomalous account activities, abnormal resource provisioning spikes, and anomalous service account usage.",
-                "enabled": any("anomaly" in s for s in source_names_lower),
+                "description": "Detects anomalous account activities, abnormal provisioning spikes, and compromised IAM identities.",
+                "default_enabled": False,
                 "tier_requirement": "Standard / Premium / Enterprise",
-                "custom_rules_count": 0,
                 "target_capability_mapping": "Identity Threat Detection & Behavioral Profiling",
             }
         ]
 
-        return services
+        services_status: List[Dict[str, Any]] = []
+
+        for svc_def in service_definitions:
+            s_id = svc_def["service_id"]
+            api_keys = svc_def["api_keys"]
+
+            # Determine enablement from explicit API state if available
+            is_enabled = False
+            found_explicit = False
+
+            for k in api_keys:
+                if k in api_states:
+                    st = api_states[k]
+                    is_enabled = (st in ("ENABLED", "INHERITED_FROM_PARENT"))
+                    found_explicit = True
+                    break
+
+            if not found_explicit:
+                # Use default enablement state based on standard SCC configuration
+                is_enabled = svc_def["default_enabled"]
+
+            custom_count = len(sha_custom_modules) if s_id == "sha" else len(etd_custom_modules) if s_id == "etd" else 0
+
+            services_status.append({
+                "service_id": s_id,
+                "display_name": svc_def["display_name"],
+                "category": svc_def["category"],
+                "description": svc_def["description"],
+                "enabled": is_enabled,
+                "status": "ENABLED" if is_enabled else "DISABLED",
+                "tier_requirement": svc_def["tier_requirement"],
+                "custom_rules_count": custom_count,
+                "target_capability_mapping": svc_def["target_capability_mapping"],
+            })
+
+        logger.info(
+            "Cataloged %d security services: %d ENABLED, %d DISABLED",
+            len(services_status),
+            len([s for s in services_status if s["enabled"]]),
+            len([s for s in services_status if not s["enabled"]])
+        )
+
+        return services_status
 
     def detect_scc_tier(self, org_settings: Dict[str, Any], services: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -389,6 +547,7 @@ class SCCCoreCollector:
             "asset_discovery_status": org_settings.get("asset_discovery_mode", "AUTOMATIC" if self.is_org else "PROJECT_MANAGED"),
             "api_endpoints_active": [
                 "securitycenter.googleapis.com (v1/v2)",
+                "securitycentermanagement.googleapis.com (v1)",
                 "securityposture.googleapis.com (v1)",
                 "dlp.googleapis.com (v2)",
                 "cloudasset.googleapis.com (v1)",

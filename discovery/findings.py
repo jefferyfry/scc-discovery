@@ -54,26 +54,51 @@ class FindingsCollector:
         severity_counts = self.group_by_field("severity", filter_expr='state="ACTIVE"')
         class_counts = self.group_by_field("finding_class", filter_expr='state="ACTIVE"')
         category_counts = self.group_by_field("category", filter_expr='state="ACTIVE"')
-        source_counts_raw = self.group_by_field("source_id", filter_expr='state="ACTIVE"')
+
+        # In SCC v1 GroupFindings, the property is 'source' or 'source_id'
+        source_counts_raw = self.group_by_field("source", filter_expr='state="ACTIVE"')
+        if not source_counts_raw:
+            source_counts_raw = self.group_by_field("source_id", filter_expr='state="ACTIVE"')
+
+        total_findings = sum(severity_counts.values()) if severity_counts else 0
 
         # Enrich source counts with human-readable names
         findings_by_source: List[Dict[str, Any]] = []
-        total_findings = sum(severity_counts.values()) if severity_counts else 0
 
-        for item in source_counts_raw:
-            s_id = item.get("key", "Unknown")
-            count = item.get("count", 0)
-            disp_name = source_lookup.get(s_id, self._infer_source_name(s_id))
-            cat_type = self._classify_source_category(disp_name)
-            share_pct = round((count / total_findings * 100), 1) if total_findings > 0 else 0.0
+        if source_counts_raw:
+            for item in source_counts_raw:
+                raw_key = item.get("key", "Unknown")
+                count = item.get("count", 0)
+                s_id = raw_key.split("/")[-1] if "/" in raw_key else raw_key
+                disp_name = source_lookup.get(s_id) or source_lookup.get(raw_key) or self._infer_source_name(s_id)
+                cat_type = self._classify_source_category(disp_name)
+                share_pct = round((count / total_findings * 100), 1) if total_findings > 0 else 0.0
 
-            findings_by_source.append({
-                "source_id": s_id,
-                "source_name": disp_name,
-                "category_type": cat_type,
-                "count": count,
-                "percentage": share_pct,
-            })
+                findings_by_source.append({
+                    "source_id": s_id,
+                    "source_name": disp_name,
+                    "category_type": cat_type,
+                    "count": count,
+                    "percentage": share_pct,
+                })
+        elif category_counts and total_findings > 0:
+            # Fallback: Infer source distribution from category prefixes
+            inferred_sources: Dict[str, int] = {}
+            for item in category_counts:
+                cat_name = item.get("key", "")
+                cnt = item.get("count", 0)
+                src = self._infer_source_from_category(cat_name)
+                inferred_sources[src] = inferred_sources.get(src, 0) + cnt
+
+            for src_name, cnt in inferred_sources.items():
+                share_pct = round((cnt / total_findings * 100), 1)
+                findings_by_source.append({
+                    "source_id": src_name.lower().replace(" ", "_"),
+                    "source_name": src_name,
+                    "category_type": self._classify_source_category(src_name),
+                    "count": cnt,
+                    "percentage": share_pct,
+                })
 
         # Sort sources by count descending
         findings_by_source.sort(key=lambda x: x["count"], reverse=True)
@@ -106,7 +131,7 @@ class FindingsCollector:
             },
             "findings_by_source": findings_by_source,
             "findings_by_category": findings_by_category,
-            "top_categories": findings_by_category[:10],
+            "top_categories": findings_by_category[:12],
         }
 
     def group_by_field(self, group_by_column: str, filter_expr: str = "") -> Any:
@@ -127,7 +152,8 @@ class FindingsCollector:
                 results = []
                 for item in data.get("groupByResults", []):
                     properties = item.get("properties", {})
-                    key = properties.get(group_by_column, "UNKNOWN")
+                    # SCC returns the property with exact name or nested
+                    key = properties.get(group_by_column) or properties.get("source") or properties.get("key") or "UNKNOWN"
                     count = int(item.get("count", 0))
                     results.append({"key": str(key), "count": count})
 
@@ -142,6 +168,22 @@ class FindingsCollector:
             logger.debug("Error executing GroupFindings for %s: %s", group_by_column, e)
 
         return {} if group_by_column in ("severity", "finding_class") else []
+
+    def _infer_source_from_category(self, cat: str) -> str:
+        c_upper = cat.upper()
+        if any(prefix in c_upper for prefix in ["PERSISTENCE:", "EXECUTION:", "EXFILTRATION:", "PRIVILEGE ESCALATION:", "INITIAL ACCESS:", "DEFENSE EVASION:"]):
+            return "Event Threat Detection (ETD)"
+        elif any(w in c_upper for w in ["VULNERABILITY", "CVE", "PACKAGE", "OUTDATED"]):
+            return "Vulnerability Assessment"
+        elif any(w in c_upper for w in ["CONTAINER", "K8S", "GKE"]):
+            return "Container Threat Detection (CTD)"
+        elif any(w in c_upper for w in ["VM_", "VMTD", "MINING"]):
+            return "Virtual Machine Threat Detection (VMTD)"
+        elif any(w in c_upper for w in ["WEB_", "XSS", "SQL_INJECTION", "WSS"]):
+            return "Web Security Scanner (WSS)"
+        elif any(w in c_upper for w in ["PII", "DLP", "SENSITIVE"]):
+            return "Sensitive Data Protection (SDP)"
+        return "Security Health Analytics (SHA)"
 
     def _infer_source_name(self, source_id: str) -> str:
         common_sources = {
@@ -158,27 +200,29 @@ class FindingsCollector:
 
     def _classify_source_category(self, display_name: str) -> str:
         name_l = display_name.lower()
-        if "health analytics" in name_l:
+        if "health analytics" in name_l or "sha" in name_l:
             return "CSPM / Misconfiguration"
-        elif "event threat" in name_l:
+        elif "event threat" in name_l or "etd" in name_l:
             return "CDR / Threat Detection"
-        elif "container threat" in name_l:
+        elif "container threat" in name_l or "ctd" in name_l:
             return "CWPP / Container Runtime"
         elif "virtual machine" in name_l or "vmtd" in name_l:
             return "CWPP / VM Memory Inspection"
         elif "sensitive data" in name_l or "dlp" in name_l:
             return "DSPM / Sensitive Data"
-        elif "rapid vulnerability" in name_l:
+        elif "vulnerability" in name_l or "rvd" in name_l:
             return "Vulnerability Management"
-        elif "web security" in name_l:
+        elif "web security" in name_l or "wss" in name_l:
             return "DAST / Web Application"
+        elif "run threat" in name_l:
+            return "Serverless Threat Detection"
         return "Third-Party / Vendor Finding"
 
     def _infer_category_class(self, cat: str) -> str:
         c_upper = cat.upper()
         if any(w in c_upper for w in ["VULNERABILITY", "CVE", "OUTDATED", "PATCH", "EXPLOIT"]):
             return "VULNERABILITY"
-        elif any(w in c_upper for w in ["EXECUTION", "ANOMALOUS", "MINING", "REVERSE_SHELL", "THREAT", "SUSPICIOUS"]):
+        elif any(w in c_upper for w in ["PERSISTENCE", "EXECUTION", "EXFILTRATION", "ANOMALOUS", "MINING", "REVERSE_SHELL", "THREAT", "SUSPICIOUS"]):
             return "THREAT"
         elif any(w in c_upper for w in ["PII", "SENSITIVE_DATA", "EXPOSED_DATA"]):
             return "OBSERVATION"

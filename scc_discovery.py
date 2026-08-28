@@ -48,7 +48,7 @@ import sys
 import json
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 # Discovery Collector Modules
@@ -212,7 +212,7 @@ def run_live_discovery(args: argparse.Namespace) -> Dict[str, Any]:
             "organization_name": parent_name,
             "scope_type": scope_type,
             "caller_identity": caller_info.get("email", "Unknown"),
-            "discovery_timestamp": datetime.utcnow().isoformat() + "Z",
+            "discovery_timestamp": datetime.now(timezone.utc).isoformat(),
             "primary_location": args.location,
         }
     }
