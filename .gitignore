@@ -1,0 +1,98 @@
+# ==============================================================================
+# .gitignore for Google Cloud SCC Discovery & Security Posture Assessment Tool
+# ==============================================================================
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.env
+.venv*
+
+# IDEs & Editor Configuration
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Testing, Type Checking & Linting Artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Security & Cloud Credentials (Never commit service account keys or tokens)
+*.key
+*.pem
+*.p12
+*service_account*.json
+*service-account*.json
+*credentials*.json
+*sa-key*.json
+sa-key.json
+client_secrets.json
+token.json
+.gcloud/
+
+# Discovery & Output Artifacts (Generated PDFs and raw export JSONs)
+*.pdf
+*.json.bak
+scc_discovery_raw.json
+scc_discovery_report.pdf
+scc_demo_report.pdf
+scc_demo_raw.json
+test_output.pdf
+test_output.json
+degraded_report.pdf
+
+# Logs
+*.log
+logs/
