@@ -84,9 +84,8 @@ token.json
 
 # Discovery & Output Artifacts (Generated PDFs and raw export JSONs)
 *.pdf
+!scc_discovery_report.pdf
 *.json.bak
-scc_discovery_raw.json
-scc_discovery_report.pdf
 scc_demo_report.pdf
 scc_demo_raw.json
 test_output.pdf

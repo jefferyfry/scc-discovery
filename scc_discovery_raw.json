@@ -1,32 +1,28 @@
 {
   "metadata": {
-    "mode": "DEMO / SYNTHETIC DATASET",
-    "organization_id": "819203948571",
-    "organization_name": "organizations/819203948571",
-    "domain": "enterprise-corp.com",
-    "caller_identity": "secops-architect@enterprise-corp.com (Cloud Security Architect)",
-    "discovery_timestamp": "2026-08-27T16:30:00Z",
+    "mode": "LIVE GCP DISCOVERY (Project Scope)",
+    "organization_id": "graphic-mason-466919-r9",
+    "organization_name": "projects/graphic-mason-466919-r9",
+    "scope_type": "PROJECT",
+    "caller_identity": "Unknown",
+    "discovery_timestamp": "2026-08-28T18:51:53.537742+00:00",
     "primary_location": "global"
   },
   "scc_core": {
     "tier_info": {
-      "tier_name": "Enterprise Tier",
-      "tier_code": "ENTERPRISE",
-      "description": "Full Multi-Cloud Security Posture, Advanced Threat Detection (ETD/CTD/VMTD), Posture Management, and Governance.",
-      "is_enterprise": true,
-      "posture_api_status": "ACTIVE",
-      "scope": "Organization-wide (Inherited)",
-      "org_name": "organizations/819203948571",
+      "tier_name": "Premium Tier",
+      "tier_code": "PREMIUM",
+      "description": "Advanced Threat Detection (ETD, CTD, VMTD), Full SHA Rule Set, Vulnerability Scanning & Custom Modules.",
+      "is_enterprise": false,
+      "posture_api_status": "NOT_CONFIGURED",
+      "scope": "Project-level (projects/graphic-mason-466919-r9)",
+      "resource_name": "projects/graphic-mason-466919-r9",
       "location": "global"
     },
     "organization_settings": {
-      "status": "SUCCESS",
-      "name": "organizations/819203948571/organizationSettings",
-      "enable_asset_discovery": true,
-      "asset_discovery_mode": "AUTOMATIC",
-      "asset_discovery_config": {
-        "inclusionMode": "INCLUDE_ALL_PROJECTS"
-      }
+      "status": "NOT_APPLICABLE (Project Scope)",
+      "asset_discovery_mode": "PROJECT_MANAGED",
+      "name": "projects/graphic-mason-466919-r9"
     },
     "services_status": [
       {
@@ -35,26 +31,40 @@
         "category": "Cloud Security Posture Management (CSPM)",
         "description": "Scans GCP resources for security misconfigurations and compliance violations.",
         "enabled": true,
-        "tier_requirement": "Standard / Premium / Enterprise",
-        "custom_rules_count": 6,
+        "status": "ENABLED",
+        "tier_requirement": "Standard (Basic) / Premium / Enterprise (Full + Custom Rules)",
+        "custom_rules_count": 0,
         "target_capability_mapping": "Cloud Security Posture Management (CSPM) & Custom Configuration Rules"
+      },
+      {
+        "service_id": "wss",
+        "display_name": "Web Security Scanner (WSS)",
+        "category": "Application Security (DAST)",
+        "description": "Crawls and analyzes public App Engine, GKE, and Compute Engine web endpoints for OWASP Top 10 vulnerabilities.",
+        "enabled": true,
+        "status": "ENABLED",
+        "tier_requirement": "Standard (Manual) / Premium / Enterprise (Automated)",
+        "custom_rules_count": 0,
+        "target_capability_mapping": "Dynamic Application Security Testing (DAST) & Inventory"
       },
       {
         "service_id": "etd",
         "display_name": "Event Threat Detection (ETD)",
         "category": "Cloud Detection and Response (CDR)",
-        "description": "Analyzes Cloud Audit logs, VPC Flow logs, and DNS queries for malicious behavior.",
+        "description": "Analyzes Cloud Audit logs, VPC Flow logs, and DNS queries for malicious behavior and compromised identities.",
         "enabled": true,
+        "status": "ENABLED",
         "tier_requirement": "Premium / Enterprise",
-        "custom_rules_count": 3,
-        "target_capability_mapping": "Cloud Detection & Response (CDR) & Cloud Events Analysis"
+        "custom_rules_count": 0,
+        "target_capability_mapping": "Cloud Detection & Response (CDR) & Event Stream Analysis"
       },
       {
         "service_id": "ctd",
         "display_name": "Container Threat Detection (CTD)",
         "category": "Cloud Workload Protection (CWPP)",
-        "description": "Detects runtime container execution anomalies, suspicious binaries, and reverse shells in GKE.",
+        "description": "Detects runtime container execution anomalies, suspicious binaries, reverse shells, and malicious kernel calls in GKE.",
         "enabled": true,
+        "status": "ENABLED",
         "tier_requirement": "Premium / Enterprise",
         "custom_rules_count": 0,
         "target_capability_mapping": "Runtime Workload Sensor & K8s Admission Control"
@@ -63,211 +73,504 @@
         "service_id": "vmtd",
         "display_name": "Virtual Machine Threat Detection (VMTD)",
         "category": "Cloud Workload Protection (CWPP)",
-        "description": "Agentless hypervisor-level memory scanning for kernel rootkits and crypto-mining on VMs.",
-        "enabled": true,
+        "description": "Agentless hypervisor-level memory scanning to detect kernel rootkits and crypto-mining on Compute Engine instances.",
+        "enabled": false,
+        "status": "DISABLED",
         "tier_requirement": "Premium / Enterprise",
         "custom_rules_count": 0,
         "target_capability_mapping": "Agentless VM Scanning & Runtime Behavioral Detection"
       },
       {
+        "service_id": "cloud_run_td",
+        "display_name": "Cloud Run Threat Detection",
+        "category": "Serverless Workload Protection",
+        "description": "Monitors runtime executions in Cloud Run serverless container instances for suspicious binary activity.",
+        "enabled": false,
+        "status": "DISABLED",
+        "tier_requirement": "Premium / Enterprise",
+        "custom_rules_count": 0,
+        "target_capability_mapping": "Serverless Container Runtime Defense"
+      },
+      {
         "service_id": "rvd",
-        "display_name": "Rapid Vulnerability Detection (RVD)",
+        "display_name": "Vulnerability Assessment & Rapid Vulnerability Detection",
         "category": "Vulnerability Management",
-        "description": "Scans public-facing workloads for zero-day vulnerabilities and critical remote code execution (RCE) flaws.",
+        "description": "Scans public-facing workloads and infrastructure for zero-day vulnerabilities, OS CVEs, and critical flaws.",
         "enabled": true,
+        "status": "ENABLED",
         "tier_requirement": "Premium / Enterprise",
         "custom_rules_count": 0,
         "target_capability_mapping": "Vulnerability Management & Attack Surface Analysis"
       },
       {
-        "service_id": "wss",
-        "display_name": "Web Security Scanner (WSS)",
-        "category": "Application Security (DAST)",
-        "description": "Crawls and analyzes public App Engine, GKE, and Compute Engine web endpoints for OWASP flaws.",
-        "enabled": true,
+        "service_id": "notebook_scanner",
+        "display_name": "Notebook Security Scanner",
+        "category": "AI / ML Workspace Security",
+        "description": "Detects security vulnerabilities and credential exposures across Vertex AI Workbench notebook instances.",
+        "enabled": false,
+        "status": "DISABLED",
         "tier_requirement": "Premium / Enterprise",
         "custom_rules_count": 0,
-        "target_capability_mapping": "Dynamic Application Security Testing (DAST) & Inventory"
+        "target_capability_mapping": "Data Science & AI Workspace Posture"
+      },
+      {
+        "service_id": "artifact_guard",
+        "display_name": "Artifact Guard / Container Analysis",
+        "category": "Software Supply Chain Security",
+        "description": "Scans container images stored in Artifact Registry / Container Registry for OS package vulnerabilities.",
+        "enabled": false,
+        "status": "DISABLED",
+        "tier_requirement": "Standard / Premium / Enterprise",
+        "custom_rules_count": 0,
+        "target_capability_mapping": "Container Registry & CI/CD Vulnerability Scanning"
+      },
+      {
+        "service_id": "compliance_manager",
+        "display_name": "Compliance Manager / Evaluation Service",
+        "category": "Regulatory Compliance",
+        "description": "Continuously audits workloads against CIS, NIST 800-53, PCI-DSS, ISO 27001, and SOC 2 frameworks.",
+        "enabled": false,
+        "status": "DISABLED",
+        "tier_requirement": "Enterprise Tier",
+        "custom_rules_count": 0,
+        "target_capability_mapping": "Automated Multi-Standard Compliance Auditing"
+      },
+      {
+        "service_id": "ai_protection",
+        "display_name": "AI Protection & Model Armor",
+        "category": "Generative AI Security",
+        "description": "Provides runtime guardrails and prompt injection defenses for LLMs and AI workloads.",
+        "enabled": false,
+        "status": "DISABLED",
+        "tier_requirement": "Enterprise Tier",
+        "custom_rules_count": 0,
+        "target_capability_mapping": "Generative AI & LLM Runtime Guardrails"
+      },
+      {
+        "service_id": "external_exposure",
+        "display_name": "External Exposure & Attack Surface Management",
+        "category": "External Attack Surface (EASM)",
+        "description": "Discovers publicly exposed cloud assets, dangling DNS records, and shadow cloud resources.",
+        "enabled": false,
+        "status": "DISABLED",
+        "tier_requirement": "Enterprise Tier",
+        "custom_rules_count": 0,
+        "target_capability_mapping": "External Attack Surface Management (EASM)"
       },
       {
         "service_id": "sdp",
         "display_name": "Sensitive Data Protection (SDP / Cloud DLP)",
         "category": "Data Security Posture Management (DSPM)",
-        "description": "Automated discovery and classification of sensitive data in GCS, BigQuery, and Cloud SQL.",
-        "enabled": true,
+        "description": "Automated discovery and classification of sensitive data in Cloud Storage, BigQuery, and Cloud SQL.",
+        "enabled": false,
+        "status": "DISABLED",
         "tier_requirement": "Premium / Enterprise (Integrated)",
         "custom_rules_count": 0,
         "target_capability_mapping": "Data Security Posture Management (DSPM) & Classification"
       },
       {
         "service_id": "anomaly",
-        "display_name": "Anomaly Detection",
+        "display_name": "Cloud Anomaly Detection",
         "category": "Behavioral Analytics",
-        "description": "Detects anomalous account activities, abnormal resource spikes, and compromised IAM identities.",
-        "enabled": true,
+        "description": "Detects anomalous account activities, abnormal provisioning spikes, and compromised IAM identities.",
+        "enabled": false,
+        "status": "DISABLED",
         "tier_requirement": "Standard / Premium / Enterprise",
         "custom_rules_count": 0,
         "target_capability_mapping": "Identity Threat Detection & Behavioral Profiling"
       }
     ],
-    "sha_custom_modules": [
-      {
-        "name": "organizations/819203948571/securityHealthAnalyticsCustomModules/custom_deny_public_gcs",
-        "display_name": "Enforce Private GCS Buckets (No AllUsers / AllAuth)",
-        "enablement_state": "ENABLED",
-        "severity": "CRITICAL",
-        "description": "Flags any Cloud Storage bucket configured with public IAM read or write grants."
-      },
-      {
-        "name": "organizations/819203948571/securityHealthAnalyticsCustomModules/custom_enforce_cmek_bigquery",
-        "display_name": "Mandate Customer-Managed Encryption (CMEK) for BigQuery",
-        "enablement_state": "ENABLED",
-        "severity": "HIGH",
-        "description": "Ensures all BigQuery datasets are encrypted using organization KMS keys."
-      },
-      {
-        "name": "organizations/819203948571/securityHealthAnalyticsCustomModules/custom_disallow_default_sa",
-        "display_name": "Block Compute Engine Default Service Account Usage",
-        "enablement_state": "ENABLED",
-        "severity": "HIGH",
-        "description": "Detects VMs running with default Compute Service Account with Editor permissions."
-      },
-      {
-        "name": "organizations/819203948571/securityHealthAnalyticsCustomModules/custom_require_shielded_vm",
-        "display_name": "Require Shielded VM & Secure Boot on all Compute Instances",
-        "enablement_state": "ENABLED",
-        "severity": "MEDIUM",
-        "description": "Enforces Secure Boot, vTPM, and Integrity Monitoring on GCE instances."
-      },
-      {
-        "name": "organizations/819203948571/securityHealthAnalyticsCustomModules/custom_deny_egress_all",
-        "display_name": "Flag Unrestricted 0.0.0.0/0 Egress Firewall Rules",
-        "enablement_state": "ENABLED",
-        "severity": "MEDIUM",
-        "description": "Alerts on custom VPC firewall rules allowing unrestricted outbound traffic on high-risk ports."
-      },
-      {
-        "name": "organizations/819203948571/securityHealthAnalyticsCustomModules/custom_require_binary_authorization",
-        "display_name": "Require Binary Authorization on Production GKE Clusters",
-        "enablement_state": "ENABLED",
-        "severity": "HIGH",
-        "description": "Validates container signature verification is enforced before pod scheduling in GKE."
-      }
-    ],
-    "etd_custom_modules": [
-      {
-        "name": "organizations/819203948571/eventThreatDetectionCustomModules/etd_high_priv_role_grant",
-        "display_name": "Anomalous Organization Admin Role Grant",
-        "enablement_state": "ENABLED",
-        "type": "CUSTOM_IAM_RULE",
-        "description": "Alerts in real-time when roles/owner or roles/resourcemanager.organizationAdmin is granted to an external identity."
-      },
-      {
-        "name": "organizations/819203948571/eventThreatDetectionCustomModules/etd_mass_data_egress",
-        "display_name": "Mass Cloud Storage Exfiltration to External IP",
-        "enablement_state": "ENABLED",
-        "type": "CUSTOM_NETWORK_RULE",
-        "description": "Monitors VPC Flow Logs for multi-gigabyte egress flows from private buckets to untrusted external ASNs."
-      },
-      {
-        "name": "organizations/819203948571/eventThreatDetectionCustomModules/etd_crypto_pool_dns",
-        "display_name": "Cryptomining Stratum Mining Pool DNS Query",
-        "enablement_state": "ENABLED",
-        "type": "CUSTOM_DNS_RULE",
-        "description": "Detects internal VM DNS queries resolving known Monero/Bitcoin mining pool endpoints."
-      }
-    ],
+    "sha_custom_modules": [],
+    "etd_custom_modules": [],
     "integrated_sources": [
       {
-        "name": "organizations/819203948571/sources/1001",
-        "source_id": "1001",
-        "display_name": "Security Health Analytics",
-        "description": "GCP Configuration Misconfiguration Detector",
-        "is_builtin": true,
-        "type": "BUILTIN"
+        "name": "organizations/370019539693/sources/10558212408211262265",
+        "source_id": "10558212408211262265",
+        "display_name": "Assured Open Source",
+        "description": "Vulnerabilities/Threats identified by AOSS Prod",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
       },
       {
-        "name": "organizations/819203948571/sources/1002",
-        "source_id": "1002",
+        "name": "organizations/370019539693/sources/1061236891256324113",
+        "source_id": "1061236891256324113",
+        "display_name": "Serverless Vulnerability Detection",
+        "description": "Provides vulnerability detection for serverless assets.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/11053346822824339819",
+        "source_id": "11053346822824339819",
+        "display_name": "Agent Platform Threat Detection",
+        "description": "Provider used by Agent Platform Threat Detection",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/11062595649144235589",
+        "source_id": "11062595649144235589",
+        "display_name": "DSPM Monitoring",
+        "description": "Service to detect drift and post findings",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/11959073681512564977",
+        "source_id": "11959073681512564977",
+        "display_name": "Compliance Evaluation Service",
+        "description": "Service to detect compliance violations and post findings",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/12160033574872154479",
+        "source_id": "12160033574872154479",
+        "display_name": "Qualys Security for Cloud SCC",
+        "description": "Everything visible. Everything secure.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/12230961888556215033",
+        "source_id": "12230961888556215033",
+        "display_name": "Secured Landing Zone",
+        "description": "Drifts/Threats identified by Secured Landing Zone",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/12525736882315772781",
+        "source_id": "12525736882315772781",
         "display_name": "Event Threat Detection",
-        "description": "Cloud Audit & VPC Log Threat Intelligence",
+        "description": "Provider used by Event Threat Detection",
         "is_builtin": true,
         "type": "BUILTIN"
       },
       {
-        "name": "organizations/819203948571/sources/1003",
-        "source_id": "1003",
+        "name": "organizations/370019539693/sources/12537495426393576451",
+        "source_id": "12537495426393576451",
+        "display_name": "Security Command Center",
+        "description": "Detector for misconfigurations within the Security Command Center platform.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/13131596490784484389",
+        "source_id": "13131596490784484389",
         "display_name": "Container Threat Detection",
-        "description": "GKE Runtime Behavioral Security",
+        "description": "Provider used by Container Threat Detection",
         "is_builtin": true,
         "type": "BUILTIN"
       },
       {
-        "name": "organizations/819203948571/sources/1004",
-        "source_id": "1004",
+        "name": "organizations/370019539693/sources/13431333102061867917",
+        "source_id": "13431333102061867917",
+        "display_name": "GKE Security Posture",
+        "description": "Provides actionable security issues on GKE.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/13536498758140953035",
+        "source_id": "13536498758140953035",
+        "display_name": "Security Health Analytics Custom",
+        "description": "Provider used by Security Health Analytics, dedicated to vulnerabilities produced by custom detectors",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/13946219204979125888",
+        "source_id": "13946219204979125888",
+        "display_name": "Agentless Vulnerability Assessment",
+        "description": "Provider used for GCE Vulnerability Assessment (Private Preview)",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/14260870282216238270",
+        "source_id": "14260870282216238270",
+        "display_name": "Notebook Security Scanner",
+        "description": "Provider for the Notebook Security Scanner",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/15516826298089887098",
+        "source_id": "15516826298089887098",
+        "display_name": "Model Armor",
+        "description": "Provider for the Model Armor Violations",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/16422349831849039236",
+        "source_id": "16422349831849039236",
+        "display_name": "EC2 Vulnerability Assessment",
+        "description": "Provider for EC2 Vulnerability Assessment.",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/16522422815029472311",
+        "source_id": "16522422815029472311",
         "display_name": "Virtual Machine Threat Detection",
-        "description": "Agentless Hypervisor Memory Inspection",
+        "description": "Provider used by Virtual Machine Threat Detection",
         "is_builtin": true,
         "type": "BUILTIN"
       },
       {
-        "name": "organizations/819203948571/sources/1005",
-        "source_id": "1005",
-        "display_name": "Sensitive Data Protection",
-        "description": "Cloud DLP Sensitive Data Discovery",
+        "name": "organizations/370019539693/sources/16928028757566761037",
+        "source_id": "16928028757566761037",
+        "display_name": "Agent Platform Vulnerability Assessment",
+        "description": "Provider used by Agent Platform Vulnerability Assessment",
         "is_builtin": true,
         "type": "BUILTIN"
       },
       {
-        "name": "organizations/819203948571/sources/1006",
-        "source_id": "1006",
-        "display_name": "Rapid Vulnerability Detection",
-        "description": "Zero-day Attack Surface Scanner",
+        "name": "organizations/370019539693/sources/17499941847716854255",
+        "source_id": "17499941847716854255",
+        "display_name": "Security Health Analytics",
+        "description": "Scans for deviations from a GCP security baseline",
         "is_builtin": true,
         "type": "BUILTIN"
       },
       {
-        "name": "organizations/819203948571/sources/1007",
-        "source_id": "1007",
+        "name": "organizations/370019539693/sources/17654267818818087135",
+        "source_id": "17654267818818087135",
+        "display_name": "Security Posture Misconfiguration",
+        "description": "Scans for misconfigurations against preventive policy in Security Posture",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/1835971716818108229",
+        "source_id": "1835971716818108229",
+        "display_name": "SCC Compliance Dashboard",
+        "description": "Findings identified for Risk Manager",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/207656285408334195",
+        "source_id": "207656285408334195",
+        "display_name": "CIEM",
+        "description": "Findings from CIEM",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/2311647958040260818",
+        "source_id": "2311647958040260818",
+        "display_name": "Cloud Armor",
+        "description": "Provider used by Cloud Armor to report CSCC findings",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/234103000428006563",
+        "source_id": "234103000428006563",
         "display_name": "Web Security Scanner",
-        "description": "Application Security & OWASP Top 10",
+        "description": "Provider for the Web Security Scanner",
         "is_builtin": true,
         "type": "BUILTIN"
       },
       {
-        "name": "organizations/819203948571/sources/2001",
-        "source_id": "2001",
-        "display_name": "Tenable.io Vulnerability Bridge",
-        "description": "Host Vulnerability Management Integration",
+        "name": "organizations/370019539693/sources/2632056497434080381",
+        "source_id": "2632056497434080381",
+        "display_name": "Event Threat Detection Custom Modules",
+        "description": "Provider used by Event Threat Detection Custom Modules",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/2739852071822423750",
+        "source_id": "2739852071822423750",
+        "display_name": "Mandiant Attack Surface Management",
+        "description": "Provider used by Mandiant Attack Surface Management",
         "is_builtin": false,
         "type": "INTEGRATED_VENDOR"
       },
       {
-        "name": "organizations/819203948571/sources/2002",
-        "source_id": "2002",
-        "display_name": "Palo Alto Prisma Cloud Feed",
-        "description": "Legacy CSPM Finding Importer",
+        "name": "organizations/370019539693/sources/2977099624372293082",
+        "source_id": "2977099624372293082",
+        "display_name": "Application Design Center",
+        "description": "Provides vulnerabilities on ADC resources.",
         "is_builtin": false,
         "type": "INTEGRATED_VENDOR"
       },
       {
-        "name": "organizations/819203948571/sources/2003",
-        "source_id": "2003",
-        "display_name": "Custom SecOps Egress Sensor",
-        "description": "Internal Custom Python Security Tool Findings",
+        "name": "organizations/370019539693/sources/2987757335024858825",
+        "source_id": "2987757335024858825",
+        "display_name": "Security Graph",
+        "description": "Service to detect nexus subscription status",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/3554544674886042455",
+        "source_id": "3554544674886042455",
+        "display_name": "Cloud Run Threat Detection",
+        "description": "Provider used by Cloud Run Threat Detection",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/4254671632569416862",
+        "source_id": "4254671632569416862",
+        "display_name": "VM Manager",
+        "description": "Provides security vulnerabilities on VM instances.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/4278113234993302985",
+        "source_id": "4278113234993302985",
+        "display_name": "Agentless GKE Vulnerability Assessment",
+        "description": "Provider used for GKE-AVS findings",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/440232775640637728",
+        "source_id": "440232775640637728",
+        "display_name": "Agent Platform Anomaly Detection",
+        "description": "Agent Anomaly Detection is a reasoning-based oversight system that analyzes AI agent behavior and execution traces to identify behavioral anomalies and suspicious intent, ensuring governance and security.",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/470024874827229795",
+        "source_id": "470024874827229795",
+        "display_name": "Forseti Cloud SCC Connector",
+        "description": "Connect Forseti to Cloud Security Command Center",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/4705771210210476065",
+        "source_id": "4705771210210476065",
+        "display_name": "Policy Controller On-Cluster",
+        "description": "Provides on-cluster audit findings on Kubernetes memberships.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/543181886997030531",
+        "source_id": "543181886997030531",
+        "display_name": "Compliance Evaluation Service",
+        "description": "Service to detect compliance violations and post findings",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/5718548535983279728",
+        "source_id": "5718548535983279728",
+        "display_name": "IAM Recommender",
+        "description": "Provides security vulnerabilities on principals with excess permissions.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/7127434184549069966",
+        "source_id": "7127434184549069966",
+        "display_name": "Vulnerability Assessment",
+        "description": "Provider for Vulnerability Assessment.",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/7184976330094284345",
+        "source_id": "7184976330094284345",
+        "display_name": "Risk Engine",
+        "description": "Provider used by Risk Engine",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/762650448860034830",
+        "source_id": "762650448860034830",
+        "display_name": "Rapid Vulnerability Detection",
+        "description": "Provider for rapid vulnerability detector.",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/8496638064179272492",
+        "source_id": "8496638064179272492",
+        "display_name": "Sensitive Data Protection",
+        "description": "Provider for Sensitive Data Protection",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/852190387982802762",
+        "source_id": "852190387982802762",
+        "display_name": "Integrated Vulnerability Scanner",
+        "description": "Provider for Integrated Vulnerability Scanner.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/8586114900454736178",
+        "source_id": "8586114900454736178",
+        "display_name": "Security Posture",
+        "description": "Provides drift findings for Security Posture",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/8629192778587252186",
+        "source_id": "8629192778587252186",
+        "display_name": "Cloud Anomaly Detection",
+        "description": "Provider used by Cloud Anomaly Detection",
+        "is_builtin": true,
+        "type": "BUILTIN"
+      },
+      {
+        "name": "organizations/370019539693/sources/864802602708522697",
+        "source_id": "864802602708522697",
+        "display_name": "External Exposure",
+        "description": "Findings provider for External Exposure.",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/8880536827484780373",
+        "source_id": "8880536827484780373",
+        "display_name": "AI Discovery service",
+        "description": "Provider used by AI Discovery service",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/9160125459953248810",
+        "source_id": "9160125459953248810",
+        "display_name": "Data Security Posture Management",
+        "description": "Service to detect drift and post findings",
+        "is_builtin": false,
+        "type": "INTEGRATED_VENDOR"
+      },
+      {
+        "name": "organizations/370019539693/sources/9252552936221832131",
+        "source_id": "9252552936221832131",
+        "display_name": "Sensitive Actions Service",
+        "description": "Provider used by Sensitive Actions Service",
         "is_builtin": false,
         "type": "INTEGRATED_VENDOR"
       }
     ],
     "setup_details": {
-      "organization_id": "819203948571",
-      "organization_name": "organizations/819203948571",
+      "resource_id": "graphic-mason-466919-r9",
+      "resource_name": "projects/graphic-mason-466919-r9",
+      "scope_type": "PROJECT",
       "primary_location": "global",
-      "scc_service_agent": "service-org-819203948571@security-center-api.iam.gserviceaccount.com",
-      "dlp_service_agent": "service-org-819203948571@gcp-sa-dlp.iam.gserviceaccount.com",
-      "asset_discovery_status": "AUTOMATIC",
+      "scc_service_agent": "service-graphic-mason-466919-r9@gcp-sa-scc.iam.gserviceaccount.com",
+      "dlp_service_agent": "service-graphic-mason-466919-r9@gcp-sa-dlp.iam.gserviceaccount.com",
+      "asset_discovery_status": "PROJECT_MANAGED",
       "api_endpoints_active": [
         "securitycenter.googleapis.com (v1/v2)",
+        "securitycentermanagement.googleapis.com (v1)",
         "securityposture.googleapis.com (v1)",
         "dlp.googleapis.com (v2)",
         "cloudasset.googleapis.com (v1)",
@@ -276,1006 +579,669 @@
     }
   },
   "postures": {
-    "postures": [
-      {
-        "name": "organizations/819203948571/locations/global/postures/gcp-enterprise-baseline",
-        "posture_id": "gcp-enterprise-baseline",
-        "state": "ACTIVE",
-        "revision_id": "v3.2",
-        "description": "Enterprise-wide mandatory security guardrails and CIS Foundations benchmark policies.",
-        "policy_sets_count": 4,
-        "total_rules_count": 52,
-        "policy_sets": [
-          {
-            "policy_set_id": "iam-governance",
-            "description": "Enforce MFA, deny external users, service account limits",
-            "rules_count": 14
-          },
-          {
-            "policy_set_id": "network-perimeter",
-            "description": "VPC Service Controls, firewall restrictions, private Google access",
-            "rules_count": 16
-          },
-          {
-            "policy_set_id": "data-protection",
-            "description": "CMEK enforcement, public bucket prevention, data retention",
-            "rules_count": 12
-          },
-          {
-            "policy_set_id": "logging-auditing",
-            "description": "Audit log sinks, retention lock, admin activity tracking",
-            "rules_count": 10
-          }
-        ],
-        "create_time": "2024-03-15T10:00:00Z",
-        "update_time": "2026-06-20T14:30:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/postures/prod-workload-hardening",
-        "posture_id": "prod-workload-hardening",
-        "state": "ACTIVE",
-        "revision_id": "v2.0",
-        "description": "Strict workload protection posture deployed to all production Kubernetes (GKE) and VM folders.",
-        "policy_sets_count": 3,
-        "total_rules_count": 38,
-        "policy_sets": [
-          {
-            "policy_set_id": "gke-hardening",
-            "description": "Private clusters, Binary Auth, non-root containers, Network Policies",
-            "rules_count": 18
-          },
-          {
-            "policy_set_id": "compute-hardening",
-            "description": "Shielded VMs, OS Login, confidential computing, internal IP only",
-            "rules_count": 12
-          },
-          {
-            "policy_set_id": "database-hardening",
-            "description": "Cloud SQL SSL enforce, private IP, automated backups",
-            "rules_count": 8
-          }
-        ],
-        "create_time": "2024-08-10T12:00:00Z",
-        "update_time": "2026-07-12T09:15:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/postures/multicloud-aws-posture",
-        "posture_id": "multicloud-aws-posture",
-        "state": "ACTIVE",
-        "revision_id": "v1.1",
-        "description": "Multi-cloud AWS posture assessment mapping AWS accounts to SCC Enterprise dashboard.",
-        "policy_sets_count": 2,
-        "total_rules_count": 24,
-        "policy_sets": [
-          {
-            "policy_set_id": "aws-s3-guardrails",
-            "description": "Block public S3 access, enforce SSE-KMS",
-            "rules_count": 10
-          },
-          {
-            "policy_set_id": "aws-iam-guardrails",
-            "description": "Deny root account access, MFA on console logins",
-            "rules_count": 14
-          }
-        ],
-        "create_time": "2025-01-20T16:00:00Z",
-        "update_time": "2026-05-18T11:45:00Z"
-      }
-    ],
-    "posture_count": 3,
-    "posture_deployments": [
-      {
-        "name": "organizations/819203948571/locations/global/postureDeployments/dep-org-baseline",
-        "deployment_id": "dep-org-baseline",
-        "target_resource": "organizations/819203948571",
-        "posture_id": "gcp-enterprise-baseline",
-        "posture_revision_id": "v3.2",
-        "state": "ACTIVE",
-        "description": "Org-wide deployment of baseline posture covering all 22 projects.",
-        "failure_message": "",
-        "create_time": "2024-03-16T11:00:00Z",
-        "update_time": "2026-06-20T14:35:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/postureDeployments/dep-prod-folder",
-        "deployment_id": "dep-prod-folder",
-        "target_resource": "folders/948201948271",
-        "posture_id": "prod-workload-hardening",
-        "posture_revision_id": "v2.0",
-        "state": "ACTIVE",
-        "description": "Production Folder deployment covering 10 mission-critical projects.",
-        "failure_message": "",
-        "create_time": "2024-08-11T13:00:00Z",
-        "update_time": "2026-07-12T09:20:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/postureDeployments/dep-data-analytics-folder",
-        "deployment_id": "dep-data-analytics-folder",
-        "target_resource": "folders/948201948272",
-        "posture_id": "prod-workload-hardening",
-        "posture_revision_id": "v2.0",
-        "state": "ACTIVE",
-        "description": "Data Analytics folder deployment enforcing strict data and database posture.",
-        "failure_message": "",
-        "create_time": "2024-08-15T09:00:00Z",
-        "update_time": "2026-07-12T09:25:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/postureDeployments/dep-aws-multicloud",
-        "deployment_id": "dep-aws-multicloud",
-        "target_resource": "aws:organizations/o-8a9d7f6b4e",
-        "posture_id": "multicloud-aws-posture",
-        "posture_revision_id": "v1.1",
-        "state": "ACTIVE",
-        "description": "Multi-cloud AWS connector deployment covering 14 AWS accounts.",
-        "failure_message": "",
-        "create_time": "2025-01-22T10:00:00Z",
-        "update_time": "2026-05-18T11:50:00Z"
-      }
-    ],
-    "deployment_count": 4,
-    "posture_templates": [
-      {
-        "template_id": "cis-gcp-foundations-v2.0",
-        "name": "CIS GCP Foundations v2.0 Template",
-        "description": "Pre-built Google Cloud posture aligning with CIS benchmark",
-        "policy_sets_count": 5,
-        "revision_id": "1"
-      },
-      {
-        "template_id": "nist-sp-800-53-rev5",
-        "name": "NIST SP 800-53 Rev 5 Template",
-        "description": "Pre-built federal security and privacy controls",
-        "policy_sets_count": 8,
-        "revision_id": "1"
-      },
-      {
-        "template_id": "aws-foundation-benchmark",
-        "name": "AWS Security Foundations Template",
-        "description": "Pre-built baseline for multi-cloud AWS posture assessment",
-        "policy_sets_count": 4,
-        "revision_id": "1"
-      }
-    ],
-    "template_count": 3,
-    "posture_feature_enabled": true
+    "postures": [],
+    "posture_count": 0,
+    "posture_deployments": [],
+    "deployment_count": 0,
+    "posture_templates": [],
+    "template_count": 0,
+    "scope": "Project-level (projects/graphic-mason-466919-r9)",
+    "status": "NOT_APPLICABLE (Project Scope - Requires Organization Node)"
   },
   "dlp_sdp": {
-    "discovery_configs": [
-      {
-        "name": "organizations/819203948571/locations/global/discoveryConfigs/bq-analytics-profiler",
-        "config_id": "bq-analytics-profiler",
-        "display_name": "Continuous BigQuery Data Profiler",
-        "status": "RUNNING",
-        "targets": [
-          "BigQuery (Tables & Datasets)"
-        ],
-        "inspect_template": "organizations/819203948571/locations/global/inspectTemplates/customer-pii-template",
-        "create_time": "2024-04-10T10:00:00Z",
-        "update_time": "2026-08-01T12:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/discoveryConfigs/gcs-datalake-profiler",
-        "config_id": "gcs-datalake-profiler",
-        "display_name": "Enterprise GCS Data Lake Scanner",
-        "status": "RUNNING",
-        "targets": [
-          "Cloud Storage (Buckets)",
-          "Cloud SQL (Databases)"
-        ],
-        "inspect_template": "organizations/819203948571/locations/global/inspectTemplates/financial-credentials-template",
-        "create_time": "2024-05-18T14:00:00Z",
-        "update_time": "2026-08-05T09:30:00Z"
-      }
-    ],
-    "discovery_config_count": 2,
-    "inspect_templates": [
-      {
-        "name": "organizations/819203948571/locations/global/inspectTemplates/customer-pii-template",
-        "template_id": "customer-pii-template",
-        "display_name": "Global Customer PII & Identification Template",
-        "description": "Detects SSNs, Passport Numbers, Driver Licenses, Phone Numbers, and Email Addresses.",
-        "min_likelihood": "LIKELY",
-        "info_types_count": 14,
-        "custom_info_types_count": 2,
-        "sample_info_types": [
-          "US_SOCIAL_SECURITY_NUMBER",
-          "PASSPORT",
-          "EMAIL_ADDRESS",
-          "PHONE_NUMBER",
-          "DRIVERS_LICENSE_NUMBER"
-        ],
-        "create_time": "2024-04-01T08:00:00Z",
-        "update_time": "2026-06-15T11:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/inspectTemplates/financial-credentials-template",
-        "template_id": "financial-credentials-template",
-        "display_name": "Payment Cards & Secrets / API Keys Detector",
-        "description": "Detects Credit Card PANs, IBANs, GCP Service Account Private Keys, JWT Tokens, and AWS Access Keys.",
-        "min_likelihood": "VERY_LIKELY",
-        "info_types_count": 18,
-        "custom_info_types_count": 4,
-        "sample_info_types": [
-          "CREDIT_CARD_NUMBER",
-          "IBAN_CODE",
-          "GCP_CREDENTIALS",
-          "AUTH_TOKEN",
-          "ENCRYPTION_KEY"
-        ],
-        "create_time": "2024-04-05T09:30:00Z",
-        "update_time": "2026-07-20T15:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/inspectTemplates/healthcare-phi-template",
-        "template_id": "healthcare-phi-template",
-        "display_name": "Healthcare PHI & Medical Records Template",
-        "description": "Detects US Medical Record Numbers (MRN), Healthcare Provider IDs, and prescription data.",
-        "min_likelihood": "POSSIBLE",
-        "info_types_count": 8,
-        "custom_info_types_count": 1,
-        "sample_info_types": [
-          "US_HEALTHCARE_NPI",
-          "US_MEDICARE_BENEFICIARY_ID",
-          "MEDICAL_TERM"
-        ],
-        "create_time": "2024-09-12T14:00:00Z",
-        "update_time": "2026-05-10T10:00:00Z"
-      }
-    ],
-    "inspect_template_count": 3,
-    "deidentify_templates": [
-      {
-        "name": "organizations/819203948571/locations/global/deidentifyTemplates/mask-pii-for-dev",
-        "template_id": "mask-pii-for-dev",
-        "display_name": "Mask PII for Non-Prod / Dev Environments",
-        "description": "Replaces SSN and Credit Card digits with asterisks (*), preserving last 4 digits.",
-        "create_time": "2024-05-01T10:00:00Z",
-        "update_time": "2026-04-12T14:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/locations/global/deidentifyTemplates/crypto-hash-user-id",
-        "template_id": "crypto-hash-user-id",
-        "display_name": "Pseudonymize Customer IDs via HMAC-SHA256",
-        "description": "Cryptographically hashes customer primary keys before loading into analytics datasets.",
-        "create_time": "2024-06-10T11:00:00Z",
-        "update_time": "2026-06-18T16:30:00Z"
-      }
-    ],
-    "deidentify_template_count": 2,
-    "job_triggers": [
-      {
-        "name": "organizations/819203948571/locations/global/jobTriggers/nightly-analytics-dlp-scan",
-        "trigger_id": "nightly-analytics-dlp-scan",
-        "display_name": "Nightly Sensitive Data Profile Refresh (BigQuery)",
-        "description": "Scheduled inspection of newly loaded BigQuery partition tables.",
-        "status": "HEALTHY",
-        "last_run_time": "2026-08-27T02:00:00Z",
-        "inspect_job": {
-          "target": "BigQuery Analytics Data Warehouse"
-        }
-      },
-      {
-        "name": "organizations/819203948571/locations/global/jobTriggers/weekly-gcs-bucket-audit",
-        "trigger_id": "weekly-gcs-bucket-audit",
-        "display_name": "Weekly Cloud Storage Bucket Deep Scan",
-        "description": "Scans all objects in staging and raw ingestion GCS buckets.",
-        "status": "HEALTHY",
-        "last_run_time": "2026-08-24T04:00:00Z",
-        "inspect_job": {
-          "target": "All GCS Buckets in Production"
-        }
-      }
-    ],
-    "job_trigger_count": 2,
-    "sdp_active": true
+    "discovery_configs": [],
+    "discovery_config_count": 0,
+    "inspect_templates": [],
+    "inspect_template_count": 0,
+    "deidentify_templates": [],
+    "deidentify_template_count": 0,
+    "job_triggers": [],
+    "job_trigger_count": 0,
+    "scope": "Project-level (projects/graphic-mason-466919-r9)"
   },
   "exports_mutes": {
-    "pubsub_notification_configs": [
-      {
-        "name": "organizations/819203948571/notificationConfigs/critical-threats-pubsub",
-        "config_id": "critical-threats-pubsub",
-        "pubsub_topic": "projects/secops-central-hub/topics/scc-critical-findings",
-        "topic_short": "scc-critical-findings",
-        "filter": "state = \"ACTIVE\" AND severity = \"CRITICAL\"",
-        "description": "Streams critical active threats immediately to incident response pipeline.",
-        "service_account": "service-org-819203948571@security-center-api.iam.gserviceaccount.com"
-      },
-      {
-        "name": "organizations/819203948571/notificationConfigs/jira-ticket-bridge",
-        "config_id": "jira-ticket-bridge",
-        "pubsub_topic": "projects/secops-central-hub/topics/scc-jira-autoticketing",
-        "topic_short": "scc-jira-autoticketing",
-        "filter": "state = \"ACTIVE\" AND (severity = \"HIGH\" OR severity = \"CRITICAL\") AND finding_class = \"VULNERABILITY\"",
-        "description": "Triggers automated Jira ticket creation for software vulnerabilities.",
-        "service_account": "service-org-819203948571@security-center-api.iam.gserviceaccount.com"
-      },
-      {
-        "name": "organizations/819203948571/notificationConfigs/chronicle-siem-feed",
-        "config_id": "chronicle-siem-feed",
-        "pubsub_topic": "projects/secops-central-hub/topics/scc-all-events-siem",
-        "topic_short": "scc-all-events-siem",
-        "filter": "state = \"ACTIVE\"",
-        "description": "Complete real-time stream of all SCC findings forwarded to Google SecOps / Chronicle SIEM.",
-        "service_account": "service-org-819203948571@security-center-api.iam.gserviceaccount.com"
-      }
-    ],
-    "pubsub_export_count": 3,
-    "bigquery_exports": [
-      {
-        "name": "organizations/819203948571/bigQueryExports/scc_findings_daily_lake",
-        "export_id": "scc_findings_daily_lake",
-        "dataset": "projects/secops-central-hub/datasets/scc_security_analytics",
-        "dataset_short": "scc_security_analytics",
-        "filter": "state = \"ACTIVE\" OR state = \"RESOLVED\"",
-        "description": "Continuous streaming export of all finding states for audit & reporting.",
-        "principal": "service-org-819203948571@security-center-api.iam.gserviceaccount.com",
-        "create_time": "2024-02-10T10:00:00Z",
-        "update_time": "2026-01-15T12:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/bigQueryExports/scc_compliance_archive",
-        "export_id": "scc_compliance_archive",
-        "dataset": "projects/compliance-auditing-prod/datasets/scc_compliance_snapshots",
-        "dataset_short": "scc_compliance_snapshots",
-        "filter": "finding_class = \"MISCONFIGURATION\"",
-        "description": "Dedicated dataset for historical compliance evidence and quarterly auditor reports.",
-        "principal": "service-org-819203948571@security-center-api.iam.gserviceaccount.com",
-        "create_time": "2024-05-20T08:00:00Z",
-        "update_time": "2026-03-10T14:30:00Z"
-      }
-    ],
-    "bigquery_export_count": 2,
-    "mute_rules": [
-      {
-        "name": "organizations/819203948571/muteConfigs/mute-sandbox-test-vpc-ports",
-        "mute_id": "mute-sandbox-test-vpc-ports",
-        "display_name": "Mute Test VPC Open Ports in Sandbox Projects",
-        "description": "Suppresses OPEN_FIREWALL findings in sandbox/scratch projects with automated TTLs.",
-        "filter": "resource.project_display_name : \"sandbox-\" AND category = \"OPEN_FIREWALL\"",
-        "most_recent_editor": "devops-lead@enterprise-corp.com",
-        "create_time": "2024-06-12T11:00:00Z",
-        "update_time": "2026-04-10T09:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/muteConfigs/mute-public-doc-gcs-bucket",
-        "mute_id": "mute-public-doc-gcs-bucket",
-        "display_name": "Approved Public CDN Documentation Buckets",
-        "description": "Exceptions for static asset CDN buckets intentionally configured with public read.",
-        "filter": "resource.name = \"//storage.googleapis.com/enterprise-corp-public-docs\" AND category = \"PUBLIC_BUCKET_ACL\"",
-        "most_recent_editor": "ciso-office@enterprise-corp.com",
-        "create_time": "2024-07-01T15:30:00Z",
-        "update_time": "2026-01-20T10:15:00Z"
-      },
-      {
-        "name": "organizations/819203948571/muteConfigs/mute-internal-scanners-etd",
-        "mute_id": "mute-internal-scanners-etd",
-        "display_name": "Mute Authorized Vulnerability Scanner IP Addresses in ETD",
-        "description": "Prevents ETD alerts when authorized Qualys/Tenable internal scanners perform port probes.",
-        "filter": "source.display_name = \"Event Threat Detection\" AND indicator.ip_addresses : \"10.240.10.50\"",
-        "most_recent_editor": "secops-architect@enterprise-corp.com",
-        "create_time": "2025-02-14T16:00:00Z",
-        "update_time": "2026-05-12T14:45:00Z"
-      },
-      {
-        "name": "organizations/819203948571/muteConfigs/mute-legacy-service-account-key-rotation",
-        "mute_id": "mute-legacy-service-account-key-rotation",
-        "display_name": "Legacy SA Key Rotation Waiver (Expiring Q4 2026)",
-        "description": "Approved risk waiver for legacy on-prem mainframe integration service account key rotation.",
-        "filter": "category = \"KEY_NOT_ROTATED\" AND resource.name : \"sa-mainframe-sync\"",
-        "most_recent_editor": "ciso-risk-committee@enterprise-corp.com",
-        "create_time": "2025-08-01T10:00:00Z",
-        "update_time": "2026-08-01T08:00:00Z"
-      },
-      {
-        "name": "organizations/819203948571/muteConfigs/mute-gke-node-cos-deprecated-cve",
-        "mute_id": "mute-gke-node-cos-deprecated-cve",
-        "display_name": "Mute Non-Exploitable Kernel CVEs on Ephemeral Node Pools",
-        "description": "Mutes CVE-2023-XXXX on batch worker node pools scheduled for 24h recycling.",
-        "filter": "category = \"VULNERABILITY\" AND vulnerability.cve.id = \"CVE-2023-4911\" AND resource.name : \"batch-worker\"",
-        "most_recent_editor": "k8s-platform-eng@enterprise-corp.com",
-        "create_time": "2025-11-10T14:00:00Z",
-        "update_time": "2026-03-25T11:30:00Z"
-      }
-    ],
-    "mute_rule_count": 5
+    "pubsub_notification_configs": [],
+    "pubsub_export_count": 0,
+    "bigquery_exports": [],
+    "bigquery_export_count": 0,
+    "mute_rules": [],
+    "mute_rule_count": 0,
+    "scope": "Project-level (projects/graphic-mason-466919-r9)"
   },
   "connectors": {
-    "multicloud_connectors": [
-      {
-        "type": "AWS Cloud Connector",
-        "name": "AWS Production & Data Master Account Connector",
-        "target_id": "aws:organizations/o-8a9d7f6b4e (14 Accounts)",
-        "status": "ACTIVE",
-        "description": "AWS Multi-cloud posture assessment & inventory connection.",
-        "target_connector_mapping": "Cloud Account Connector (Role-based / Multi-cloud)"
-      },
-      {
-        "type": "Azure Cloud Connector",
-        "name": "Azure Enterprise Tenant Connector",
-        "target_id": "azure:tenants/7f8a9b0c-1d2e-3f4a-5b6c-7d8e9f0a1b2c (5 Subscriptions)",
-        "status": "ACTIVE",
-        "description": "Azure Multi-cloud posture assessment & subscription discovery.",
-        "target_connector_mapping": "Subscription Connector (App Registration / Multi-cloud)"
-      }
-    ],
-    "multicloud_count": 2,
-    "ticketing_connectors": [
-      {
-        "type": "Jira Ticketing Connector",
-        "name": "Jira Cloud SecOps Project Bridge",
-        "topic": "projects/secops-central-hub/topics/scc-jira-autoticketing",
-        "status": "ACTIVE",
-        "description": "Automated ticket creation in Jira (Project: SEC) for high/critical security findings.",
-        "target_connector_mapping": "Jira Cloud / Server Integration & Automation Rules"
-      },
-      {
-        "type": "ServiceNow ITSM Connector",
-        "name": "ServiceNow Security Incident Response (SIR)",
-        "topic": "projects/secops-central-hub/topics/scc-critical-findings",
-        "status": "ACTIVE",
-        "description": "ServiceNow Incident & Vulnerability Response integration.",
-        "target_connector_mapping": "ServiceNow Incident & Security Operations Integration"
-      },
-      {
-        "type": "Chronicle / Google SecOps SIEM",
-        "name": "Chronicle SIEM Real-time Security Ingestion",
-        "topic": "projects/secops-central-hub/topics/scc-all-events-siem",
-        "status": "ACTIVE",
-        "description": "Real-time SIEM ingestion for security event correlation.",
-        "target_connector_mapping": "SIEM Streaming Forwarder & Webhook Integration"
-      }
-    ],
-    "ticketing_count": 3,
+    "multicloud_connectors": [],
+    "multicloud_count": 0,
+    "ticketing_connectors": [],
+    "ticketing_count": 0,
     "vendor_sources": [
       {
-        "name": "organizations/819203948571/sources/2001",
-        "display_name": "Tenable.io Host Vulnerabilities",
-        "description": "Agent-based vulnerability scans on VMs",
-        "source_id": "2001",
+        "name": "organizations/370019539693/sources/10558212408211262265",
+        "display_name": "Assured Open Source",
+        "description": "Vulnerabilities/Threats identified by AOSS Prod",
+        "source_id": "10558212408211262265",
         "type": "3rd-Party Security Vendor Source"
       },
       {
-        "name": "organizations/819203948571/sources/2002",
-        "display_name": "Palo Alto Prisma Cloud CSPM",
-        "description": "Legacy multi-cloud configuration findings",
-        "source_id": "2002",
+        "name": "organizations/370019539693/sources/1061236891256324113",
+        "display_name": "Serverless Vulnerability Detection",
+        "description": "Provides vulnerability detection for serverless assets.",
+        "source_id": "1061236891256324113",
         "type": "3rd-Party Security Vendor Source"
       },
       {
-        "name": "organizations/819203948571/sources/2003",
-        "display_name": "Custom SecOps Egress Sensor",
-        "description": "Internal network anomaly detection engine",
-        "source_id": "2003",
+        "name": "organizations/370019539693/sources/11053346822824339819",
+        "display_name": "Agent Platform Threat Detection",
+        "description": "Provider used by Agent Platform Threat Detection",
+        "source_id": "11053346822824339819",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/11062595649144235589",
+        "display_name": "DSPM Monitoring",
+        "description": "Service to detect drift and post findings",
+        "source_id": "11062595649144235589",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/11959073681512564977",
+        "display_name": "Compliance Evaluation Service",
+        "description": "Service to detect compliance violations and post findings",
+        "source_id": "11959073681512564977",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/12160033574872154479",
+        "display_name": "Qualys Security for Cloud SCC",
+        "description": "Everything visible. Everything secure.",
+        "source_id": "12160033574872154479",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/12230961888556215033",
+        "display_name": "Secured Landing Zone",
+        "description": "Drifts/Threats identified by Secured Landing Zone",
+        "source_id": "12230961888556215033",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/12537495426393576451",
+        "display_name": "Security Command Center",
+        "description": "Detector for misconfigurations within the Security Command Center platform.",
+        "source_id": "12537495426393576451",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/13431333102061867917",
+        "display_name": "GKE Security Posture",
+        "description": "Provides actionable security issues on GKE.",
+        "source_id": "13431333102061867917",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/14260870282216238270",
+        "display_name": "Notebook Security Scanner",
+        "description": "Provider for the Notebook Security Scanner",
+        "source_id": "14260870282216238270",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/15516826298089887098",
+        "display_name": "Model Armor",
+        "description": "Provider for the Model Armor Violations",
+        "source_id": "15516826298089887098",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/17654267818818087135",
+        "display_name": "Security Posture Misconfiguration",
+        "description": "Scans for misconfigurations against preventive policy in Security Posture",
+        "source_id": "17654267818818087135",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/1835971716818108229",
+        "display_name": "SCC Compliance Dashboard",
+        "description": "Findings identified for Risk Manager",
+        "source_id": "1835971716818108229",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/207656285408334195",
+        "display_name": "CIEM",
+        "description": "Findings from CIEM",
+        "source_id": "207656285408334195",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/2311647958040260818",
+        "display_name": "Cloud Armor",
+        "description": "Provider used by Cloud Armor to report CSCC findings",
+        "source_id": "2311647958040260818",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/2739852071822423750",
+        "display_name": "Mandiant Attack Surface Management",
+        "description": "Provider used by Mandiant Attack Surface Management",
+        "source_id": "2739852071822423750",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/2977099624372293082",
+        "display_name": "Application Design Center",
+        "description": "Provides vulnerabilities on ADC resources.",
+        "source_id": "2977099624372293082",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/2987757335024858825",
+        "display_name": "Security Graph",
+        "description": "Service to detect nexus subscription status",
+        "source_id": "2987757335024858825",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/4254671632569416862",
+        "display_name": "VM Manager",
+        "description": "Provides security vulnerabilities on VM instances.",
+        "source_id": "4254671632569416862",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/470024874827229795",
+        "display_name": "Forseti Cloud SCC Connector",
+        "description": "Connect Forseti to Cloud Security Command Center",
+        "source_id": "470024874827229795",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/4705771210210476065",
+        "display_name": "Policy Controller On-Cluster",
+        "description": "Provides on-cluster audit findings on Kubernetes memberships.",
+        "source_id": "4705771210210476065",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/543181886997030531",
+        "display_name": "Compliance Evaluation Service",
+        "description": "Service to detect compliance violations and post findings",
+        "source_id": "543181886997030531",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/5718548535983279728",
+        "display_name": "IAM Recommender",
+        "description": "Provides security vulnerabilities on principals with excess permissions.",
+        "source_id": "5718548535983279728",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/7184976330094284345",
+        "display_name": "Risk Engine",
+        "description": "Provider used by Risk Engine",
+        "source_id": "7184976330094284345",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/852190387982802762",
+        "display_name": "Integrated Vulnerability Scanner",
+        "description": "Provider for Integrated Vulnerability Scanner.",
+        "source_id": "852190387982802762",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/8586114900454736178",
+        "display_name": "Security Posture",
+        "description": "Provides drift findings for Security Posture",
+        "source_id": "8586114900454736178",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/864802602708522697",
+        "display_name": "External Exposure",
+        "description": "Findings provider for External Exposure.",
+        "source_id": "864802602708522697",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/8880536827484780373",
+        "display_name": "AI Discovery service",
+        "description": "Provider used by AI Discovery service",
+        "source_id": "8880536827484780373",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/9160125459953248810",
+        "display_name": "Data Security Posture Management",
+        "description": "Service to detect drift and post findings",
+        "source_id": "9160125459953248810",
+        "type": "3rd-Party Security Vendor Source"
+      },
+      {
+        "name": "organizations/370019539693/sources/9252552936221832131",
+        "display_name": "Sensitive Actions Service",
+        "description": "Provider used by Sensitive Actions Service",
+        "source_id": "9252552936221832131",
         "type": "3rd-Party Security Vendor Source"
       }
     ],
-    "vendor_source_count": 3,
-    "total_connectors": 8
+    "vendor_source_count": 30,
+    "total_connectors": 30,
+    "scope": "Project-level (projects/graphic-mason-466919-r9)"
   },
   "findings": {
-    "total_active_findings": 1482,
+    "total_active_findings": 34,
     "severity_breakdown": {
-      "CRITICAL": 34,
-      "HIGH": 218,
-      "MEDIUM": 690,
-      "LOW": 540
+      "CRITICAL": 0,
+      "HIGH": 4,
+      "MEDIUM": 17,
+      "LOW": 13
     },
     "class_breakdown": {
-      "MISCONFIGURATION": 894,
-      "VULNERABILITY": 382,
-      "THREAT": 142,
-      "OBSERVATION": 64
+      "MISCONFIGURATION": 24,
+      "VULNERABILITY": 2,
+      "THREAT": 8,
+      "OBSERVATION": 0
     },
     "findings_by_source": [
       {
-        "source_id": "1001",
+        "source_id": "security_health_analytics_(sha)",
         "source_name": "Security Health Analytics (SHA)",
         "category_type": "CSPM / Misconfiguration",
-        "count": 862,
-        "percentage": 58.2
+        "count": 26,
+        "percentage": 76.5
       },
       {
-        "source_id": "2001",
-        "source_name": "Tenable.io Vulnerability Bridge",
-        "category_type": "Vulnerability Management",
-        "count": 284,
-        "percentage": 19.2
-      },
-      {
-        "source_id": "1002",
+        "source_id": "event_threat_detection_(etd)",
         "source_name": "Event Threat Detection (ETD)",
         "category_type": "CDR / Threat Detection",
-        "count": 96,
-        "percentage": 6.5
-      },
-      {
-        "source_id": "1006",
-        "source_name": "Rapid Vulnerability Detection (RVD)",
-        "category_type": "Vulnerability Management",
-        "count": 82,
-        "percentage": 5.5
-      },
-      {
-        "source_id": "1005",
-        "source_name": "Sensitive Data Protection (SDP)",
-        "category_type": "DSPM / Sensitive Data",
-        "count": 58,
-        "percentage": 3.9
-      },
-      {
-        "source_id": "1003",
-        "source_name": "Container Threat Detection (CTD)",
-        "category_type": "CWPP / Container Runtime",
-        "count": 42,
-        "percentage": 2.8
-      },
-      {
-        "source_id": "1007",
-        "source_name": "Web Security Scanner (WSS)",
-        "category_type": "DAST / Web Application",
-        "count": 38,
-        "percentage": 2.6
-      },
-      {
-        "source_id": "1004",
-        "source_name": "Virtual Machine Threat Detection (VMTD)",
-        "category_type": "CWPP / VM Memory Inspection",
-        "count": 20,
-        "percentage": 1.3
+        "count": 8,
+        "percentage": 23.5
       }
     ],
     "findings_by_category": [
       {
-        "key": "OPEN_FIREWALL",
-        "count": 142,
-        "class": "MISCONFIGURATION",
-        "severity": "HIGH"
-      },
-      {
-        "key": "PUBLIC_BUCKET_ACL",
-        "count": 118,
-        "class": "MISCONFIGURATION",
-        "severity": "CRITICAL"
-      },
-      {
-        "key": "NON_PRIVILEGED_SERVICE_ACCOUNT_ADMIN",
-        "count": 94,
-        "class": "MISCONFIGURATION",
-        "severity": "HIGH"
-      },
-      {
-        "key": "PACKAGE_VULNERABILITY",
-        "count": 88,
-        "class": "VULNERABILITY",
-        "severity": "HIGH"
-      },
-      {
-        "key": "KMS_KEY_NOT_ROTATED",
-        "count": 76,
+        "key": "SERVICE_ACCOUNT_KEY_NOT_ROTATED",
+        "count": 6,
         "class": "MISCONFIGURATION",
         "severity": "MEDIUM"
       },
       {
-        "key": "SUSPICIOUS_SCRIPT_EXECUTION",
-        "count": 64,
+        "key": "USER_MANAGED_SERVICE_ACCOUNT_KEY",
+        "count": 6,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "Persistence: Service Account Key Created",
+        "count": 5,
         "class": "THREAT",
-        "severity": "CRITICAL"
+        "severity": "LOW"
       },
       {
-        "key": "OUTDATED_OS_IMAGE",
-        "count": 58,
-        "class": "VULNERABILITY",
-        "severity": "MEDIUM"
-      },
-      {
-        "key": "EXPOSED_SERVICE_ACCOUNT_KEY",
-        "count": 52,
-        "class": "MISCONFIGURATION",
-        "severity": "CRITICAL"
-      },
-      {
-        "key": "UNRESTRICTED_SQL_INSTANCE",
-        "count": 48,
-        "class": "MISCONFIGURATION",
-        "severity": "HIGH"
-      },
-      {
-        "key": "SENSITIVE_DATA_PII_EXPOSED",
-        "count": 46,
-        "class": "OBSERVATION",
-        "severity": "HIGH"
-      },
-      {
-        "key": "CONTAINER_ROOT_EXECUTION",
-        "count": 44,
-        "class": "MISCONFIGURATION",
-        "severity": "MEDIUM"
-      },
-      {
-        "key": "ANOMALOUS_IAM_GRANT",
-        "count": 38,
+        "key": "Persistence: IAM Anomalous Grant",
+        "count": 2,
         "class": "THREAT",
-        "severity": "CRITICAL"
+        "severity": "LOW"
       },
       {
-        "key": "UNENCRYPTED_BIGQUERY_TABLE",
-        "count": 36,
+        "key": "ADMIN_SERVICE_ACCOUNT",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "API_KEY_APPS_UNRESTRICTED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "API_KEY_EXISTS",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "API_KEY_NOT_ROTATED",
+        "count": 1,
         "class": "MISCONFIGURATION",
         "severity": "MEDIUM"
       },
       {
-        "key": "GKE_LEGACY_AUTH_ENABLED",
-        "count": 34,
+        "key": "AUDIT_CONFIG_NOT_MONITORED",
+        "count": 1,
         "class": "MISCONFIGURATION",
-        "severity": "HIGH"
+        "severity": "LOW"
       },
       {
-        "key": "SUSPICIOUS_BINARY_EXECUTION",
-        "count": 32,
+        "key": "BUCKET_IAM_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "CUSTOM_ROLE_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "Exfiltration: BigQuery Data Exfiltration",
+        "count": 1,
         "class": "THREAT",
-        "severity": "HIGH"
+        "severity": "LOW"
       },
       {
-        "key": "DEFAULT_COMPUTE_SA_USED",
-        "count": 30,
+        "key": "FIREWALL_NOT_MONITORED",
+        "count": 1,
         "class": "MISCONFIGURATION",
         "severity": "HIGH"
       },
       {
-        "key": "SQL_INJECTION_VULNERABILITY",
-        "count": 28,
-        "class": "VULNERABILITY",
-        "severity": "CRITICAL"
-      },
-      {
-        "key": "XSS_VULNERABILITY",
-        "count": 26,
-        "class": "VULNERABILITY",
-        "severity": "MEDIUM"
-      },
-      {
-        "key": "PUBLIC_IP_ON_GKE_NODE",
-        "count": 24,
+        "key": "IAM_ROLE_HAS_EXCESSIVE_PERMISSIONS",
+        "count": 1,
         "class": "MISCONFIGURATION",
-        "severity": "MEDIUM"
+        "severity": "LOW"
       },
       {
-        "key": "CRYPTO_MINING_BEHAVIOR",
-        "count": 18,
-        "class": "THREAT",
-        "severity": "CRITICAL"
+        "key": "NETWORK_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "OWNER_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "PRIMITIVE_ROLES_USED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "ROUTE_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "UNUSED_IAM_ROLE",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
       }
     ],
     "top_categories": [
       {
-        "key": "OPEN_FIREWALL",
-        "count": 142
+        "key": "SERVICE_ACCOUNT_KEY_NOT_ROTATED",
+        "count": 6,
+        "class": "MISCONFIGURATION",
+        "severity": "MEDIUM"
       },
       {
-        "key": "PUBLIC_BUCKET_ACL",
-        "count": 118
+        "key": "USER_MANAGED_SERVICE_ACCOUNT_KEY",
+        "count": 6,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
       },
       {
-        "key": "NON_PRIVILEGED_SERVICE_ACCOUNT_ADMIN",
-        "count": 94
+        "key": "Persistence: Service Account Key Created",
+        "count": 5,
+        "class": "THREAT",
+        "severity": "LOW"
       },
       {
-        "key": "PACKAGE_VULNERABILITY",
-        "count": 88
+        "key": "Persistence: IAM Anomalous Grant",
+        "count": 2,
+        "class": "THREAT",
+        "severity": "LOW"
       },
       {
-        "key": "KMS_KEY_NOT_ROTATED",
-        "count": 76
+        "key": "ADMIN_SERVICE_ACCOUNT",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
       },
       {
-        "key": "SUSPICIOUS_SCRIPT_EXECUTION",
-        "count": 64
+        "key": "API_KEY_APPS_UNRESTRICTED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
       },
       {
-        "key": "OUTDATED_OS_IMAGE",
-        "count": 58
+        "key": "API_KEY_EXISTS",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
       },
       {
-        "key": "EXPOSED_SERVICE_ACCOUNT_KEY",
-        "count": 52
+        "key": "API_KEY_NOT_ROTATED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "MEDIUM"
       },
       {
-        "key": "UNRESTRICTED_SQL_INSTANCE",
-        "count": 48
+        "key": "AUDIT_CONFIG_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
       },
       {
-        "key": "SENSITIVE_DATA_PII_EXPOSED",
-        "count": 46
+        "key": "BUCKET_IAM_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "CUSTOM_ROLE_NOT_MONITORED",
+        "count": 1,
+        "class": "MISCONFIGURATION",
+        "severity": "LOW"
+      },
+      {
+        "key": "Exfiltration: BigQuery Data Exfiltration",
+        "count": 1,
+        "class": "THREAT",
+        "severity": "LOW"
       }
     ]
   },
   "compliance": {
-    "total_frameworks_tracked": 6,
-    "enabled_frameworks_count": 6,
     "compliance_frameworks": [
       {
         "framework_id": "cis-gcp",
         "name": "CIS Google Cloud Computing Foundations",
         "category": "Regulatory & Best Practices",
-        "description": "Center for Internet Security prescriptive guidance for Google Cloud Platform.",
+        "description": "Center for Internet Security prescriptive guidance for securing Google Cloud Platform environments.",
         "enabled": true,
         "status": "ACTIVE / MONITORED",
-        "evaluated_controls_count": 92,
-        "failing_controls_count": 15,
-        "passing_percentage": 83.7,
-        "standard_framework_name": "CIS Google Cloud Platform Foundation Benchmark v2.0"
+        "evaluated_controls_count": 85,
+        "failing_controls_count": 12,
+        "passing_percentage": 85.9,
+        "standard_framework_name": "CIS Google Cloud Platform Foundation Benchmark"
       },
       {
         "framework_id": "nist-800-53",
-        "name": "NIST SP 800-53 Rev 5",
+        "name": "NIST SP 800-53",
         "category": "Federal / Government",
-        "description": "National Institute of Standards and Technology security & privacy catalog.",
+        "description": "National Institute of Standards and Technology security and privacy controls for federal information systems.",
         "enabled": true,
         "status": "ACTIVE / MONITORED",
-        "evaluated_controls_count": 134,
-        "failing_controls_count": 28,
-        "passing_percentage": 79.1,
+        "evaluated_controls_count": 120,
+        "failing_controls_count": 18,
+        "passing_percentage": 85.0,
         "standard_framework_name": "NIST 800-53 Rev. 5"
       },
       {
         "framework_id": "pci-dss",
-        "name": "PCI-DSS v4.0",
+        "name": "PCI-DSS",
         "category": "Payment Card Industry",
-        "description": "Global standard for cardholder data environments and financial workloads.",
+        "description": "Technical and operational requirements for organizations accepting or processing payment transactions.",
         "enabled": true,
         "status": "ACTIVE / MONITORED",
-        "evaluated_controls_count": 78,
-        "failing_controls_count": 7,
-        "passing_percentage": 91.0,
+        "evaluated_controls_count": 65,
+        "failing_controls_count": 8,
+        "passing_percentage": 87.7,
         "standard_framework_name": "PCI DSS v4.0"
       },
       {
         "framework_id": "iso-27001",
-        "name": "ISO/IEC 27001:2022",
+        "name": "ISO/IEC 27001",
         "category": "International Standard",
-        "description": "Information security management system (ISMS) controls.",
+        "description": "International standard for managing information security management systems (ISMS).",
         "enabled": true,
         "status": "ACTIVE / MONITORED",
-        "evaluated_controls_count": 88,
-        "failing_controls_count": 11,
-        "passing_percentage": 87.5,
+        "evaluated_controls_count": 65,
+        "failing_controls_count": 8,
+        "passing_percentage": 87.7,
         "standard_framework_name": "ISO/IEC 27001:2022"
       },
       {
         "framework_id": "soc-2",
         "name": "SOC 2 Type II",
         "category": "Service Organization Controls",
-        "description": "AICPA Trust Services Criteria (Security, Confidentiality, Availability).",
+        "description": "AICPA criteria for managing customer data based on security, availability, processing integrity, and confidentiality.",
         "enabled": true,
         "status": "ACTIVE / MONITORED",
-        "evaluated_controls_count": 72,
-        "failing_controls_count": 10,
-        "passing_percentage": 86.1,
+        "evaluated_controls_count": 65,
+        "failing_controls_count": 8,
+        "passing_percentage": 87.7,
         "standard_framework_name": "SOC 2 Type II"
       },
       {
         "framework_id": "hipaa",
         "name": "HIPAA Security Rule",
         "category": "Healthcare / Privacy",
-        "description": "Standards to safeguard electronic Protected Health Information (ePHI).",
+        "description": "US national standards to protect individuals' electronic personal health information (ePHI).",
         "enabled": true,
         "status": "ACTIVE / MONITORED",
-        "evaluated_controls_count": 64,
-        "failing_controls_count": 5,
-        "passing_percentage": 92.2,
+        "evaluated_controls_count": 65,
+        "failing_controls_count": 8,
+        "passing_percentage": 87.7,
         "standard_framework_name": "HIPAA Security"
       }
-    ]
+    ],
+    "total_frameworks_tracked": 6,
+    "enabled_frameworks_count": 6,
+    "scope": "Project-level (projects/graphic-mason-466919-r9)"
   },
   "assets": {
-    "total_assets": 3420,
-    "asset_types_count": 28,
-    "top_asset_types": [
+    "total_assets": 57,
+    "asset_types_count": 7,
+    "asset_counts_by_type": [
       {
-        "resource_type": "compute.googleapis.com/Instance",
-        "short_type": "Compute Instance (VM)",
-        "service": "compute",
-        "count": 520
+        "resource_type": "serviceusage.googleapis.com/Service",
+        "display_name": "Service",
+        "count": 36
       },
       {
-        "resource_type": "storage.googleapis.com/Bucket",
-        "short_type": "Cloud Storage Bucket",
-        "service": "storage",
-        "count": 320
+        "resource_type": "iam.googleapis.com/ServiceAccountKey",
+        "display_name": "ServiceAccountKey",
+        "count": 9
+      },
+      {
+        "resource_type": "apikeys.googleapis.com/Key",
+        "display_name": "Key",
+        "count": 4
       },
       {
         "resource_type": "iam.googleapis.com/ServiceAccount",
-        "short_type": "IAM Service Account",
-        "service": "iam",
-        "count": 240
+        "display_name": "ServiceAccount",
+        "count": 3
       },
       {
-        "resource_type": "compute.googleapis.com/Firewall",
-        "short_type": "VPC Firewall Rule",
-        "service": "compute",
-        "count": 180
+        "resource_type": "logging.googleapis.com/LogSink",
+        "display_name": "LogSink",
+        "count": 2
       },
       {
-        "resource_type": "compute.googleapis.com/Disk",
-        "short_type": "Persistent Disk Volume",
-        "service": "compute",
-        "count": 680
+        "resource_type": "logging.googleapis.com/LogBucket",
+        "display_name": "LogBucket",
+        "count": 2
       },
       {
-        "resource_type": "bigquery.googleapis.com/Dataset",
-        "short_type": "BigQuery Dataset",
-        "service": "bigquery",
-        "count": 115
+        "resource_type": "cloudresourcemanager.googleapis.com/Project",
+        "display_name": "Project",
+        "count": 1
+      }
+    ],
+    "top_asset_types": [
+      {
+        "resource_type": "serviceusage.googleapis.com/Service",
+        "display_name": "Service",
+        "count": 36
       },
       {
-        "resource_type": "bigquery.googleapis.com/Table",
-        "short_type": "BigQuery Table",
-        "service": "bigquery",
-        "count": 480
+        "resource_type": "iam.googleapis.com/ServiceAccountKey",
+        "display_name": "ServiceAccountKey",
+        "count": 9
       },
       {
-        "resource_type": "container.googleapis.com/Cluster",
-        "short_type": "GKE Kubernetes Cluster",
-        "service": "container",
-        "count": 84
+        "resource_type": "apikeys.googleapis.com/Key",
+        "display_name": "Key",
+        "count": 4
       },
       {
-        "resource_type": "container.googleapis.com/NodePool",
-        "short_type": "GKE Node Pool",
-        "service": "container",
-        "count": 164
+        "resource_type": "iam.googleapis.com/ServiceAccount",
+        "display_name": "ServiceAccount",
+        "count": 3
       },
       {
-        "resource_type": "sqladmin.googleapis.com/Instance",
-        "short_type": "Cloud SQL Database Instance",
-        "service": "sqladmin",
-        "count": 72
+        "resource_type": "logging.googleapis.com/LogSink",
+        "display_name": "LogSink",
+        "count": 2
       },
       {
-        "resource_type": "cloudkms.googleapis.com/CryptoKey",
-        "short_type": "Cloud KMS CryptoKey",
-        "service": "cloudkms",
-        "count": 96
+        "resource_type": "logging.googleapis.com/LogBucket",
+        "display_name": "LogBucket",
+        "count": 2
       },
       {
-        "resource_type": "compute.googleapis.com/ForwardingRule",
-        "short_type": "Cloud Load Balancer",
-        "service": "compute",
-        "count": 45
-      },
-      {
-        "resource_type": "cloudfunctions.googleapis.com/CloudFunction",
-        "short_type": "Cloud Function",
-        "service": "cloudfunctions",
-        "count": 140
-      },
-      {
-        "resource_type": "pubsub.googleapis.com/Topic",
-        "short_type": "Pub/Sub Topic",
-        "service": "pubsub",
-        "count": 150
-      },
-      {
-        "resource_type": "secretmanager.googleapis.com/Secret",
-        "short_type": "Secret Manager Secret",
-        "service": "secretmanager",
-        "count": 134
+        "resource_type": "cloudresourcemanager.googleapis.com/Project",
+        "display_name": "Project",
+        "count": 1
       }
     ],
     "domain_categories": {
-      "Compute & Workloads (VMs, Containers, Functions)": 1588,
-      "Storage & Data Lakes (GCS, BigQuery, Filestore)": 915,
-      "Databases (Cloud SQL, Spanner, Firestore, Bigtable)": 124,
-      "Identity & Access Management (Roles, Service Accounts, Keys)": 380,
-      "Networking & Connectivity (VPC, Subnets, Firewalls, Load Balancers)": 285,
-      "Security & Cryptography (KMS, Secrets, Certificates)": 230,
-      "Other Cloud Services": 198
-    }
+      "Storage & Data Lakes (GCS, Filestore)": 2,
+      "Identity & Access Management (Service Accounts, Keys)": 16,
+      "Other Cloud Services": 39
+    },
+    "scope": "Project-level (projects/graphic-mason-466919-r9)"
   },
   "hierarchy": {
     "organization": {
-      "name": "organizations/819203948571",
-      "display_name": "Enterprise Corp Global",
-      "directory_customer_id": "C01ab2c3d",
+      "name": "Standalone Project Scope",
+      "display_name": "Project: graphic-mason-466919-r9",
       "state": "ACTIVE",
-      "create_time": "2021-01-15T08:00:00Z"
+      "directory_customer_id": "N/A (Project Scope)"
     },
-    "folders": [
+    "folders": [],
+    "folder_count": 0,
+    "projects": [
       {
-        "name": "folders/948201948270",
-        "folder_id": "948201948270",
-        "display_name": "Core-Infrastructure-Shared",
+        "project_id": "graphic-mason-466919-r9",
+        "project_number": "807947129826",
+        "display_name": "Google SecOps",
         "state": "ACTIVE",
-        "parent": "organizations/819203948571"
-      },
-      {
-        "name": "folders/948201948271",
-        "folder_id": "948201948271",
-        "display_name": "Production-Workloads-Ecosystem",
-        "state": "ACTIVE",
-        "parent": "organizations/819203948571"
-      },
-      {
-        "name": "folders/948201948272",
-        "folder_id": "948201948272",
-        "display_name": "Data-Analytics-AI-Platform",
-        "state": "ACTIVE",
-        "parent": "organizations/819203948571"
-      },
-      {
-        "name": "folders/948201948273",
-        "folder_id": "948201948273",
-        "display_name": "Non-Production-Dev-Sandbox",
-        "state": "ACTIVE",
-        "parent": "organizations/819203948571"
+        "parent": "folders/798019972503"
       }
     ],
-    "folder_count": 4,
-    "project_count": 22,
-    "active_project_count": 22,
-    "coverage_scope": "Organization-Wide (100% Inherited)",
+    "project_count": 1,
+    "active_project_count": 1,
+    "coverage_scope": "Project-Level Scope (graphic-mason-466919-r9)",
     "coverage_percentage": 100.0,
     "projects_summary": [
       {
-        "project_id": "core-hub-network-prod",
-        "display_name": "Core Hub & Transit VPC",
+        "project_id": "graphic-mason-466919-r9",
+        "project_number": "807947129826",
+        "display_name": "Google SecOps",
         "state": "ACTIVE",
-        "parent": "folders/948201948270"
-      },
-      {
-        "project_id": "secops-central-hub",
-        "display_name": "SecOps Central Security Hub",
-        "state": "ACTIVE",
-        "parent": "folders/948201948270"
-      },
-      {
-        "project_id": "iam-identity-governance",
-        "display_name": "IAM & Directory Sync",
-        "state": "ACTIVE",
-        "parent": "folders/948201948270"
-      },
-      {
-        "project_id": "ecommerce-frontend-prod",
-        "display_name": "E-Commerce Web & APIs",
-        "state": "ACTIVE",
-        "parent": "folders/948201948271"
-      },
-      {
-        "project_id": "payments-backend-pci-prod",
-        "display_name": "PCI Payment Processing",
-        "state": "ACTIVE",
-        "parent": "folders/948201948271"
-      },
-      {
-        "project_id": "orders-fulfillment-prod",
-        "display_name": "Orders & Inventory Service",
-        "state": "ACTIVE",
-        "parent": "folders/948201948271"
-      },
-      {
-        "project_id": "customer-data-lake-prod",
-        "display_name": "Customer BigQuery Lake",
-        "state": "ACTIVE",
-        "parent": "folders/948201948272"
-      },
-      {
-        "project_id": "ml-training-vertex-ai",
-        "display_name": "Vertex AI ML Training",
-        "state": "ACTIVE",
-        "parent": "folders/948201948272"
-      },
-      {
-        "project_id": "dev-engineering-sandbox-01",
-        "display_name": "Dev Engineering Sandbox",
-        "state": "ACTIVE",
-        "parent": "folders/948201948273"
-      },
-      {
-        "project_id": "qa-integration-testing",
-        "display_name": "QA Automation Test Bed",
-        "state": "ACTIVE",
-        "parent": "folders/948201948273"
+        "parent": "folders/798019972503"
       }
     ]
   }
