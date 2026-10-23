@@ -196,8 +196,12 @@ def run_live_discovery(args: argparse.Namespace) -> Dict[str, Any]:
         print("      python scc_discovery.py --folder-id 9876543210 --output-pdf folder_report.pdf")
         sys.exit(1)
 
-    target_resource = resolve_target_resource(args)
-    parent_name, raw_id, scope_type = normalize_resource(target_resource)
+    try:
+        target_resource = resolve_target_resource(args)
+        parent_name, raw_id, scope_type = normalize_resource(target_resource)
+    except ValueError as e:
+        print(f"[!] ERROR: {e}")
+        sys.exit(1)
 
     print(f"[*] Initializing GCP Authentication for {scope_type.capitalize()} Scope: {parent_name}...")
     auth_mgr = GCPAuthManager(key_file_path=args.credentials)
@@ -329,6 +333,10 @@ def main() -> None:
         try:
             with open(args.output_json, "w") as f:
                 json.dump(discovery_data, f, indent=2)
+            try:
+                os.chmod(args.output_json, 0o600)
+            except OSError:
+                pass
             print(f"[+] Raw discovery JSON written to: {os.path.abspath(args.output_json)}")
         except Exception as e:
             print(f"[!] Error writing JSON output: {e}")
@@ -338,6 +346,10 @@ def main() -> None:
     try:
         report_gen = SCCReportGenerator(discovery_data, output_path=args.output_pdf)
         pdf_path = report_gen.generate()
+        try:
+            os.chmod(pdf_path, 0o600)
+        except OSError:
+            pass
         print(f"\n[+] SUCCESS: Professional PDF Report generated at:")
         print(f"    {pdf_path}\n")
     except Exception as e:

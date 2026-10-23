@@ -31,7 +31,7 @@ from unittest.mock import MagicMock, patch
 
 # Import collectors and generators
 from discovery.auth import GCPAuthManager
-from discovery.scc_core import SCCCoreCollector
+from discovery.scc_core import SCCCoreCollector, normalize_resource
 from discovery.postures import SecurityPostureCollector
 from discovery.dlp_sdp import SensitiveDataProtectionCollector
 from discovery.exports_mutes import ExportsAndMutesCollector
@@ -251,6 +251,54 @@ class TestSCCDiscoveryE2E(unittest.TestCase):
         self.assertIn("projects/my-standalone-sec-project", result.stdout)
         self.assertTrue(os.path.exists(proj_pdf))
         self.assertTrue(os.path.exists(proj_json))
+
+    def test_08_resource_identifier_validation(self):
+        """Validate that normalize_resource accepts valid IDs and rejects path traversal or malformed IDs."""
+        # Valid identifiers
+        self.assertEqual(normalize_resource("819203948571"), ("organizations/819203948571", "819203948571", "ORGANIZATION"))
+        self.assertEqual(normalize_resource("organizations/819203948571"), ("organizations/819203948571", "819203948571", "ORGANIZATION"))
+        self.assertEqual(normalize_resource("projects/my-prod-project-123"), ("projects/my-prod-project-123", "my-prod-project-123", "PROJECT"))
+        self.assertEqual(normalize_resource("folders/9876543210"), ("folders/9876543210", "9876543210", "FOLDER"))
+
+        # Invalid / malicious identifiers
+        invalid_inputs = [
+            "../../etc/passwd",
+            "projects/foo/../../bar",
+            "org/123;drop",
+            "",
+            "projects/bad space",
+            "projects/test\ninjection",
+        ]
+        for bad_input in invalid_inputs:
+            with self.assertRaises(ValueError, msg=f"Should reject invalid input: {bad_input}"):
+                normalize_resource(bad_input)
+
+    def test_09_pdf_generation_resilience_to_malformed_xml(self):
+        """Verify PDF generator does not crash when presented with unescaped XML, CEL comparison operators, and unclosed tags."""
+        mock_data = get_mock_discovery_data(resource_id=self.org_id)
+        # Inject unescaped XML and CEL comparison operators
+        mock_data["exports_mutes"]["mute_rules"].append({
+            "name": "organizations/819203948571/muteConfigs/test-mute",
+            "display_name": "Test Mute <Rule> & Exceptions",
+            "filter": 'create_time < timestamp("2026-01-01T00:00:00Z") && severity == "LOW" <b invalid',
+            "most_recent_editor": "secops&admin<test>",
+        })
+        mock_data["scc_core"]["setup_details"]["scc_service_agent"] = "service-agent<123>&test@gcp-sa-scc.iam.gserviceaccount.com"
+
+        xml_test_pdf = os.path.join(self.test_dir.name, "malformed_xml_test.pdf")
+        gen = SCCReportGenerator(mock_data, output_path=xml_test_pdf)
+        result_path = gen.generate()
+        self.assertTrue(os.path.exists(result_path))
+        self.assertGreater(os.path.getsize(result_path), 5000)
+
+    def test_10_file_permissions_on_export(self):
+        """Validate that generated files have restricted permissions (readable/writable only by owner)."""
+        self.test_06_cli_subprocess_execution_org_scope()
+        pdf_stat = os.stat(self.pdf_path).st_mode
+        json_stat = os.stat(self.json_path).st_mode
+        # Check that group and other permissions have no read/write/execute bits set (0o077)
+        self.assertEqual(pdf_stat & 0o077, 0, f"PDF file permissions too open: {oct(pdf_stat)}")
+        self.assertEqual(json_stat & 0o077, 0, f"JSON file permissions too open: {oct(json_stat)}")
 
 
 if __name__ == "__main__":

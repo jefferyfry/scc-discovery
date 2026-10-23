@@ -17,18 +17,38 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, List
 
+from xml.sax.saxutils import escape as _xml_escape
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, KeepTogether
+    SimpleDocTemplate, Paragraph as _RLParagraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, KeepTogether
 )
 from reportlab.pdfgen import canvas
 
 from report.migration_mapping import calculate_migration_readiness, get_phased_migration_roadmap
 
 logger = logging.getLogger(__name__)
+
+
+def _esc(val: Any) -> str:
+    """Safely escape text for ReportLab XML/HTML Paragraph formatting."""
+    if val is None:
+        return ""
+    return _xml_escape(str(val))
+
+
+def Paragraph(text: Any, style: Any, **kwargs: Any) -> _RLParagraph:
+    """
+    Resilient wrapper around ReportLab Paragraph that catches XML parser failures
+    caused by unescaped dynamic cloud data (e.g. CEL filters, resource names with '<' or '&')
+    and gracefully falls back to an escaped version without crashing report generation.
+    """
+    try:
+        return _RLParagraph(str(text), style, **kwargs)
+    except Exception:
+        return _RLParagraph(_esc(text), style, **kwargs)
 
 # Enterprise Color Palette
 NAVY_PRIMARY = colors.HexColor("#0F172A")     # Dark Slate/Navy
@@ -523,11 +543,11 @@ class SCCReportGenerator:
             ],
             [
                 Paragraph("<b>SCC Service Agent:</b>", self.styles['TableCellBold']),
-                Paragraph(f"<code>{setup.get('scc_service_agent')}</code>", self.styles['TableCell']),
+                Paragraph(f"<code>{_esc(setup.get('scc_service_agent'))}</code>", self.styles['TableCell']),
             ],
             [
                 Paragraph("<b>DLP Service Agent:</b>", self.styles['TableCellBold']),
-                Paragraph(f"<code>{setup.get('dlp_service_agent')}</code>", self.styles['TableCell']),
+                Paragraph(f"<code>{_esc(setup.get('dlp_service_agent'))}</code>", self.styles['TableCell']),
             ],
         ]
         t_setup = Table(setup_data, colWidths=[1.8 * inch, 5.6 * inch])
@@ -763,16 +783,16 @@ class SCCReportGenerator:
             has_exports = True
             exp_rows.append([
                 Paragraph("<b>Pub/Sub Stream</b>", self.styles['TableCellBold']),
-                Paragraph(f"<code>{ps.get('topic_short')}</code>", self.styles['TableCell']),
-                Paragraph(ps.get("filter", ""), self.styles['TableCell']),
+                Paragraph(f"<code>{_esc(ps.get('topic_short'))}</code>", self.styles['TableCell']),
+                Paragraph(_esc(ps.get("filter", "")), self.styles['TableCell']),
                 Paragraph("Webhooks / SIEM Forwarder", self.styles['TableCell']),
             ])
         for bq in exports.get("bigquery_exports", []):
             has_exports = True
             exp_rows.append([
                 Paragraph("<b>BigQuery Table</b>", self.styles['TableCellBold']),
-                Paragraph(f"<code>{bq.get('dataset_short')}</code>", self.styles['TableCell']),
-                Paragraph(bq.get("filter", ""), self.styles['TableCell']),
+                Paragraph(f"<code>{_esc(bq.get('dataset_short'))}</code>", self.styles['TableCell']),
+                Paragraph(_esc(bq.get("filter", "")), self.styles['TableCell']),
                 Paragraph("Data Exporter / Cloud Sinks", self.styles['TableCell']),
             ])
         if not has_exports:
@@ -808,9 +828,9 @@ class SCCReportGenerator:
         if mutes:
             for m in mutes[:6]:
                 mute_rows.append([
-                    Paragraph(f"<b>{m.get('display_name')}</b>", self.styles['TableCellBold']),
-                    Paragraph(f"<code>{m.get('filter')}</code>", self.styles['TableCell']),
-                    Paragraph(m.get("most_recent_editor", "Unknown"), self.styles['TableCell']),
+                    Paragraph(f"<b>{_esc(m.get('display_name'))}</b>", self.styles['TableCellBold']),
+                    Paragraph(f"<code>{_esc(m.get('filter'))}</code>", self.styles['TableCell']),
+                    Paragraph(_esc(m.get("most_recent_editor", "Unknown")), self.styles['TableCell']),
                     Paragraph("Exception Rule / Waiver", self.styles['TableCell']),
                 ])
         else:

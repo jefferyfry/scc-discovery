@@ -23,6 +23,7 @@ This module inspects core SCC configuration across Organization, Folder, or Proj
 - Setup & Service Account Details
 """
 
+import re
 import logging
 from typing import Dict, Any, List, Optional
 from google.auth.transport.requests import AuthorizedSession
@@ -32,19 +33,44 @@ logger = logging.getLogger(__name__)
 
 def normalize_resource(resource_id: str) -> tuple[str, str, str]:
     """
-    Normalize a resource identifier into (canonical_name, raw_id, scope_type).
+    Normalize and validate a resource identifier into (canonical_name, raw_id, scope_type).
+
+    Raises:
+        ValueError: If resource_id is empty, malformed, or contains invalid characters.
     """
+    if not resource_id or not isinstance(resource_id, str):
+        raise ValueError("GCP resource identifier must be a non-empty string.")
+
     clean = resource_id.strip()
     if clean.startswith("organizations/"):
-        return clean, clean.replace("organizations/", ""), "ORGANIZATION"
+        canonical = clean
+        raw_id = clean[len("organizations/"):]
+        scope_type = "ORGANIZATION"
     elif clean.startswith("projects/"):
-        return clean, clean.replace("projects/", ""), "PROJECT"
+        canonical = clean
+        raw_id = clean[len("projects/"):]
+        scope_type = "PROJECT"
     elif clean.startswith("folders/"):
-        return clean, clean.replace("folders/", ""), "FOLDER"
+        canonical = clean
+        raw_id = clean[len("folders/"):]
+        scope_type = "FOLDER"
     elif clean.isdigit():
-        return f"organizations/{clean}", clean, "ORGANIZATION"
+        canonical = f"organizations/{clean}"
+        raw_id = clean
+        scope_type = "ORGANIZATION"
     else:
-        return f"projects/{clean}", clean, "PROJECT"
+        canonical = f"projects/{clean}"
+        raw_id = clean
+        scope_type = "PROJECT"
+
+    # Validate that raw_id contains only valid GCP resource identifier characters (alphanumeric, hyphens, underscores, periods)
+    if not raw_id or not re.match(r"^[a-zA-Z0-9_.-]+$", raw_id) or ".." in raw_id:
+        raise ValueError(
+            f"Invalid GCP resource identifier: '{resource_id}'. Must be a valid alphanumeric "
+            "ID (e.g. project-id, organization ID, or folder ID)."
+        )
+
+    return canonical, raw_id, scope_type
 
 
 class SCCCoreCollector:

@@ -4,8 +4,8 @@ google-cloud-securitycenter>=1.40.0
 google-cloud-dlp>=3.30.0
 google-cloud-asset>=4.0.0
 google-cloud-resource-manager>=1.15.0
-requests>=2.31.0
+requests>=2.32.3
 
 # PDF Generation & Visual Reporting
-reportlab>=4.0.0
-pillow>=10.0.0
+reportlab>=4.2.5
+pillow>=10.3.0
